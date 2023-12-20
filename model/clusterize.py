@@ -82,4 +82,4 @@ def create_mask_of_attack(data):
 
 
 visualize_kmeans("./model/train_data/_1.csv")
-print(create_mask_of_attack("./model/train_data/_1.csv"))
+# print(create_mask_of_attack("./model/train_data/_1.csv"))
