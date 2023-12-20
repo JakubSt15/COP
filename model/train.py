@@ -23,7 +23,6 @@ def cut_into_windows_edf(edf):
     raw_data=mne.make_fixed_length_epochs(edf,2)
     raw_data=raw_data.get_data()
     x=tf.transpose(tf.convert_to_tensor(raw_data),perm=[0,2,1])
-        
     data_shifted = edf.get_data()[:, 1:]
     times_shifted = edf.times[1:]
         
@@ -32,12 +31,16 @@ def cut_into_windows_edf(edf):
     raw_data=mne.make_fixed_length_epochs(edf,2)
     raw_data=raw_data.get_data()
     y=tf.transpose(tf.convert_to_tensor(raw_data),perm=[0,2,1])
-        
+    
     length=raw_data.shape[0]-1
     x=x[:y.shape[0]-1,:,:19]
     y=y[:-1,:,:19]
     del raw_data
     (x, y) = normalize(x, y)
+
+    print(x[0])
+    print("X len: ", len(x))
+    print("X[0] len: ",len(x[0]))
     return  x, y, length
 
 def cut_into_windows_csv(csv, hz=500):
@@ -47,14 +50,16 @@ def cut_into_windows_csv(csv, hz=500):
     num_windows = len(data_array) // length_of_window
     windows = [data_array[i * length_of_window:(i + 1) * length_of_window] for i in range(num_windows)]
     tensor_windows = [np.array(window) for window in windows]
+    print(len(windows))
 
-    data_shifted = csv.get_data()[:, 1:]
-    length=raw_data.shape[0]-1
+
+    length=len(tensor_windows[0])-1
+    x = np.array(tensor_windows)  # Convert to NumPy array
+    y = np.array(tensor_windows)
     x=x[:y.shape[0]-1,:,:19]
     y=y[:-1,:,:19]
     del raw_data
     (x, y) = normalize(x, y)
-    print(x,y) 
     return  x, y, length
 
 def new_model_train_sequential(train_data_files, units=1, epochs=1, batch_size=1000, frame_size=1000, save_file="./model/model_saved/"):
@@ -77,8 +82,8 @@ def new_model_train_sequential(train_data_files, units=1, epochs=1, batch_size=1
 
     edf=mne.io.read_raw_edf(train_data_files[0],preload=True)
 
-    (x, y, length) = cut_into_windows(edf)
-
+    (x, y, length) = cut_into_windows_edf(edf)
+    return 0
     dataset = tf.data.Dataset.from_tensor_slices((x,y))
     split = int(split_ratio * length)
     train_dataset = dataset.take(split).batch(batch_size)
@@ -193,4 +198,5 @@ def normalize(x, y):
     return (_x, _y)
 
 
-new_model_train_classifier(["model/train_data/mask_p11_Record1.csv"])
+# new_model_train_classifier(["model/train_data/mask_p11_Record1.csv"])
+new_model_train_sequential(["model/train_data/p11_Record1.edf"])
