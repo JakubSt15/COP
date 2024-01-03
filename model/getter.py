@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import pandas as pd
 
 def get_sample(start_register, start_attack, end_attack, hz=512):
     start_register = datetime.strptime(start_register, "%H.%M.%S")
@@ -10,4 +11,5 @@ def get_sample(start_register, start_attack, end_attack, hz=512):
 
     return start_attack_sample, end_attack_sample
 
-print(get_sample("19.39.33", "19.58.36", "19.59.46"))
+def get_samples(file):
+    pass

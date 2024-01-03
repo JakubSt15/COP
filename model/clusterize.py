@@ -4,14 +4,18 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+from scipy.signal import butter, lfilter
+import os
+
 
 '''
 Imports csv where each channel is a column and returns a df where
 eachchannel is a row
 '''
-def csv_to_samples(csv_path):
+def csv_to_samples(csv_path, transpose=False):
     df = pd.read_csv(csv_path)
-    return df.T
+    if transpose: return df.T
+    return df
 
 
 '''
@@ -47,6 +51,7 @@ def visualize_kmeans(data):
         plt.show()
     elif n == 2:
         pca = PCA(n_components=2)
+        print(len(_data[0]))
         data_pca = pca.fit_transform(_data)
         kmeans = KMeans(n_clusters=2)
         labels = kmeans.fit_predict(data_pca)
@@ -61,7 +66,26 @@ def visualize_kmeans(data):
 
         plt.show()
 
-
+'''
+Gets the signals from csvand returns csv with their strengths
+'''
+def get_signal_strength(data):
+    _data = csv_to_samples(data) if type(data) is str else data
+    pasma = [[8, 13], [13,30]]
+    Fs=512
+    moc_pasmowa = []
+    for i in range(19):
+        strengths_for_band = []
+        for j in range(len(pasma)):
+            print(i)
+            signal = _data.iloc[i, :]
+            (a, b) = butter(4, [pasma[j][0]/(Fs/2), pasma[j][1]/(Fs/2)], btype='band')
+            filtered = lfilter(a, b, signal)
+            moc = np.mean(list(map(lambda x:pow(x,2),filtered)))
+            strengths_for_band.append(moc)
+        moc_pasmowa.append(strengths_for_band)
+    df = pd.DataFrame(moc_pasmowa)
+    df.to_csv(f'./model/moce/moc_{count_files("./model/moce")}.csv', index=False)
 
 '''
 Gets data as path or ready data and returns clusterized labels
@@ -69,6 +93,7 @@ labels differnetiate attack from no attacked channels during overall attack
 '''
 def get_kmeans_labels(data):
     _data = csv_to_samples(data) if type(data) is str else data
+    print(KMeans(n_clusters=2).fit_predict(_data))
     return KMeans(n_clusters=2).fit_predict(_data)
 
 '''
@@ -76,10 +101,23 @@ Creates a mask of the moment of attack, it should be then pasted into its place 
 '''
 def create_mask_of_attack(data):
     labels = np.array(get_kmeans_labels(data))
-    mask = np.tile(labels, (100, 1))
+    mask = np.tile(labels, (35840, 1))
     df = pd.DataFrame(mask)
     df.to_csv('output.csv', index=False)
 
 
-visualize_kmeans("./model/train_data/_1.csv")
-# print(create_mask_of_attack("./model/train_data/_1.csv"))
+'''
+count number of files in the directory
+'''
+def count_files(dir):
+    count = 0
+    dir_path = fr'{dir}'
+    for path in os.scandir(dir_path):
+        if path.is_file():
+            count += 1
+    return count
+
+
+# visualize_kmeans("./model/moce/moc_0.csv")
+get_signal_strength("./model/train_data/_1.csv")
+print(create_mask_of_attack("./model/moce/moc_0.csv"))
