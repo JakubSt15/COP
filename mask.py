@@ -184,11 +184,24 @@ def get_sample_number(reg_start, reg_end, attack_start, attack_end, Hz, output_f
 
     start = datetime.strptime(attack_start, "%H.%M.%S")
     end = datetime.strptime(attack_end, "%H.%M.%S")
-    seconds_start = int((start - reg_start).total_seconds())
-    seconds_end = int((end - reg_start).total_seconds())
-    end_second = int((reg_end - reg_start).total_seconds())
 
-    output_text = f"{seconds_start*Hz} {seconds_end*Hz}"
+    # Ensure the attack time is within the same day as the registration
+    start = reg_start.replace(hour=start.hour, minute=start.minute, second=start.second)
+    end = reg_start.replace(hour=end.hour, minute=end.minute, second=end.second)
+
+    if start < reg_start:
+        # Add 24 hours to the attack time to count from midnight to the end of the day
+        start += timedelta(hours=24)
+
+    # Calculate the time of the attack from midnight
+    seconds_start_midnight = int((start - reg_start).total_seconds())
+    seconds_end_midnight = int((end - reg_start).total_seconds())
+
+    # If the attack time crosses midnight, add 24 hours to the calculated time
+    if end < start:
+        seconds_end_midnight += 24 * 60 * 60  # 24 hours in seconds
+
+    output_text = f"{seconds_start_midnight * Hz} {seconds_end_midnight * Hz}"
 
     # Append to the file instead of overwriting
     with open(output_file, 'a') as file:
@@ -196,7 +209,19 @@ def get_sample_number(reg_start, reg_end, attack_start, attack_end, Hz, output_f
 
     print(output_text)
 
-    return seconds_start * Hz, seconds_end * Hz, end_second * Hz
+    return int(seconds_start_midnight * Hz), int(seconds_end_midnight * Hz), int((reg_end - reg_start).total_seconds() * Hz)
+
+    # Append to the file instead of overwriting
+    file_name = os.path.splitext(os.path.basename(output_file))[0]
+    output_text = f"{file_name}:{seconds_start_midnight * Hz} {seconds_end_midnight * Hz}"
+
+    # Append to the file instead of overwriting
+    with open(output_file, 'a') as file:
+        file.write(output_text + '\n')
+
+    print(output_text)
+
+    return int(seconds_start_midnight * Hz), int(seconds_end_midnight * Hz), int((reg_end - reg_start).total_seconds() * Hz)
 
 
 # Assuming badaniaDane.txt is in the same directory as the script
@@ -204,29 +229,24 @@ file_path = "badaniaDane.txt"
 output_file_path = "output.txt"
 df = pd.read_csv(file_path, delimiter=';')
 
-# Keeping the original line unchanged
 channels_of_interest = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 'Cz', 'C4', 'T4', 'T5', 'P3', 'Pz',
                         'P4', 'T6', 'O1', 'O2']
-file_path = "badaniaDane.txt"
-output_file_path = "output.txt"
-df = pd.read_csv(file_path, delimiter=';')
 
-for i, row in df.iterrows():
-    # Generate the output file path for each iteration
-    output_file_path = f"output_{row['File name']}.txt"
+# Create a single output file
+with open(output_file_path, 'w') as output_file:
+    for i, row in df.iterrows():
+        # Execute the EEG analysis for each file
+        anylzer = EEGAnalyzer(row['File name'], channels_of_interest, step=1, threshold=0.00075)
 
-    # Execute the EEG analysis for each file
-    anylzer = EEGAnalyzer(row['File name'], channels_of_interest, step=1, threshold=0.00075)
+        # Get the sample numbers and save the masks
+        start, end, end_sec = get_sample_number(row['Registration start time'], row['Registration end time'],
+                                                row['Seizure start time'], row['Seizure end time'], 512, output_file_path)
 
-    # Get the sample numbers and save the masks
-    start, end, end_sec = get_sample_number(row['Registration start time'], row['Registration end time'],
-                                            row['Seizure start time'], row['Seizure end time'], 512, output_file_path)
+        # Update the EEGAnalyzer instance with the new parameters
+        anylzer.channels_of_interest = channels_of_interest
+        anylzer.step = 1
+        anylzer.threshold = 0.00075
+        anylzer.output_csv_path = f"Array_of_{os.path.basename(anylzer.file_path)}.csv"
 
-    # Update the EEGAnalyzer instance with the new parameters
-    anylzer.channels_of_interest = channels_of_interest
-    anylzer.step = 1
-    anylzer.threshold = 0.00075
-    anylzer.output_csv_path = f"Array_of_{os.path.basename(anylzer.file_path)}.csv"
-
-    # Perform the analysis using the existing 'anylzer'
-    anylzer.get_attack_csv(start, end, end_sec, i + 1)
+        # Perform the analysis using the existing 'anylzer'
+        anylzer.get_attack_csv(start, end, end_sec, i + 1)
