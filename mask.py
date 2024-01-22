@@ -134,7 +134,8 @@ class EEGAnalyzer:
         len_attack = end_attack_sample - start_attack_sample
         start_record = max(start_attack_sample - len_attack // 2, 0)  # Adjusted to start from 0
         end_record = min(end_attack_sample + len_attack // 2, end_record_sample)
-
+        print("end_rcord_sample",end_record_sample)
+        print("end_record",end_record)
         seizure_mask = self.channel_mask_prepare()
         training_mask = self.channel_mask_prepare()
 
@@ -181,25 +182,33 @@ channels_of_interest = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 
 def get_sample_number(reg_start, reg_end, attack_start, attack_end, Hz, output_file):
     reg_start = datetime.strptime(reg_start, "%H.%M.%S")
     reg_end = datetime.strptime(reg_end, "%H.%M.%S")
-
     start = datetime.strptime(attack_start, "%H.%M.%S")
     end = datetime.strptime(attack_end, "%H.%M.%S")
+
+
+    # Check if the attack time is after the registration end time, indicating a new day
+    if start < reg_start:
+        start += timedelta(hours=24)
 
     # Ensure the attack time is within the same day as the registration
     start = reg_start.replace(hour=start.hour, minute=start.minute, second=start.second)
     end = reg_start.replace(hour=end.hour, minute=end.minute, second=end.second)
-
-    if start < reg_start:
-        # Add 24 hours to the attack time to count from midnight to the end of the day
-        start += timedelta(hours=24)
-
     # Calculate the time of the attack from midnight
     seconds_start_midnight = int((start - reg_start).total_seconds())
     seconds_end_midnight = int((end - reg_start).total_seconds())
 
-    # If the attack time crosses midnight, add 24 hours to the calculated time
-    if end < start:
-        seconds_end_midnight += 24 * 60 * 60  # 24 hours in seconds
+    print("times",seconds_start_midnight,seconds_end_midnight)
+    # Handle the case where the registration spans multiple days
+    if reg_end < reg_start:
+        reg_end += timedelta(hours=24)
+
+    seconds_reg_end_midnight = int((reg_end - reg_start).total_seconds())
+
+    # Handle the case where the seizure spans multiple days
+    if seconds_start_midnight < 0:
+        seconds_start_midnight += 24 * 3600
+    if seconds_end_midnight < 0:
+        seconds_end_midnight += 24 * 3600
 
     output_text = f"{seconds_start_midnight * Hz} {seconds_end_midnight * Hz}"
 
@@ -209,23 +218,12 @@ def get_sample_number(reg_start, reg_end, attack_start, attack_end, Hz, output_f
 
     print(output_text)
 
-    return int(seconds_start_midnight * Hz), int(seconds_end_midnight * Hz), int((reg_end - reg_start).total_seconds() * Hz)
+    return int(seconds_start_midnight * Hz), int(seconds_end_midnight * Hz), int(seconds_reg_end_midnight * Hz)
 
-    # Append to the file instead of overwriting
-    file_name = os.path.splitext(os.path.basename(output_file))[0]
-    output_text = f"{file_name}:{seconds_start_midnight * Hz} {seconds_end_midnight * Hz}"
-
-    # Append to the file instead of overwriting
-    with open(output_file, 'a') as file:
-        file.write(output_text + '\n')
-
-    print(output_text)
-
-    return int(seconds_start_midnight * Hz), int(seconds_end_midnight * Hz), int((reg_end - reg_start).total_seconds() * Hz)
 
 
 # Assuming badaniaDane.txt is in the same directory as the script
-file_path = "badaniaDane.txt"
+file_path = "badaniaDane_Test.txt"
 output_file_path = "output.txt"
 df = pd.read_csv(file_path, delimiter=';')
 
