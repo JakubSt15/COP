@@ -1,194 +1,162 @@
+import csv
 import os
 import mne
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from fuzzywuzzy import process
+import pandas as pd
 from datetime import datetime, timedelta
 
-
-class EEGAnalyzer:
-    def __init__(self, file_path, channels_of_interest, step=1, threshold=0):
+class EEGProcessorAndPlotter:
+    def __init__(self, file_path, time_file):
         self.file_path = file_path
-        self.channels_of_interest = channels_of_interest
-        self.step = step
-        self.threshold = threshold
-        self.output_csv_path = f"Array_of_{os.path.basename(file_path)}.csv"
-        self.eeg_data, self.matched_channels, self.sfreq, self.raw = self.extract_eeg_data()
+        self.time_file = time_file
+        self.raw = self.load_raw_data()
+        self.channels_of_interest = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 'Cz', 'C4', 'T4', 'T5', 'P3', 'Pz', 'P4', 'T6', 'O1', 'O2']
+
+    def load_raw_data(self):
+        raw = mne.io.read_raw_edf(self.file_path, preload=True)
+        return raw
+
+    def process_eeg_data(self):
+        raw_channel_names = self.raw.ch_names
+        matched_channels = self.fuzzy_channel_matching(raw_channel_names)
+        picks = mne.pick_channels(raw_channel_names, include=matched_channels)
+        eeg_data = self.raw.get_data(picks=picks) * 1000000
+        #print("raw_channel_names: ", raw_channel_names, "\n",
+        #      "matched_channels: ", matched_channels)
+        return eeg_data, self.raw.times, self.raw.info['sfreq']
+
+    def plot_eeg_channels(self):
+        eeg_data, times, sfreq = self.process_eeg_data()
+        num_channels = len(self.channels_of_interest)
+
+        if num_channels > 1:
+            fig, axs = plt.subplots(num_channels, 1, figsize=(10, 5 * num_channels))
+            for i, channel_name in enumerate(self.channels_of_interest):
+                axs[i].plot(times, eeg_data[i, :].T, label=channel_name)
+                axs[i].set_xlabel('Time (s)')
+                axs[i].set_ylabel('EEG Data')
+                axs[i].legend()
+        elif num_channels == 1:
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.plot(times, eeg_data[0, :].T, label=self.channels_of_interest[0])
+            ax.set_xlabel('Time (s)')
+            ax.set_ylabel('EEG Data')
+            ax.legend()
+
+        plt.tight_layout()
+        plt.show()
 
     def fuzzy_channel_matching(self, raw_channel_names):
-        matched_channels = [process.extractOne(channel, raw_channel_names)[0] for channel in self.channels_of_interest]
+        matched_channels = [process.extractOne(channel, raw_channel_names)[0] for channel in
+                            self.channels_of_interest]
         return matched_channels
 
-    def extract_eeg_data(self):
-        raw = mne.io.read_raw_edf(self.file_path, preload=True)
+    def save_eeg_data_to_csv(self, output_file):
+        eeg_data, _, _ = self.process_eeg_data()
 
-        raw_channel_names = raw.ch_names
+        with open(output_file, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(self.channels_of_interest)
 
-        matched_channels = self.fuzzy_channel_matching(raw_channel_names)
-
-        picks = mne.pick_channels(raw.ch_names, include=matched_channels)
-
-        eeg_data = raw.get_data(picks=picks)
-
-        return eeg_data, matched_channels, raw.info['sfreq'], raw
-
-    def generate_seizure_mask(self):
-        num_seconds = int(self.eeg_data.shape[1] / self.sfreq)
-
-        seizure_mask = {
-            'Fp1': [],
-            'Fp2': [],
-            'F7': [],
-            'F3': [],
-            'Fz': [],
-            'F4': [],
-            'F8': [],
-            'T3': [],
-            'C3': [],
-            'Cz': [],
-            'C4': [],
-            'T4': [],
-            'T5': [],
-            'P3': [],
-            'Pz': [],
-            'P4': [],
-            'T6': [],
-            'O1': [],
-            'O2': []
-        }
-
-        for j, channel in enumerate(self.channels_of_interest):
-            channel_mask = []
-            for i in range(0, num_seconds, self.step):
-                window_data = self.eeg_data[j, int(i * self.sfreq):int((i + 1) * self.sfreq)]
-                if np.any(window_data >= self.threshold):
-                    channel_mask.append(1)
-                else:
-                    channel_mask.append(0)
-
-            seizure_mask[channel] = channel_mask
-
-        # Ensure all channels have the same length, filling missing entries with zeros
-        max_length = max(len(seizure_mask[channel]) for channel in seizure_mask)
-        for channel in seizure_mask:
-            seizure_mask[channel] += [0] * (max_length - len(seizure_mask[channel]))
-
-        return seizure_mask
+            for i in range(len(eeg_data[0])):
+                row = []
+                for j in range(len(eeg_data)):
+                    row.append(eeg_data[j, i])
+                writer.writerow(row)
 
     def save_mask_to_csv(self, mask, path=None):
-        df = pd.DataFrame(mask)
+        directory = os.path.dirname(path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         path = self.output_csv_path if path is None else path
+        df = pd.DataFrame(mask)
         df.to_csv(path, index=False)
 
-    def plot_eeg_data(self):
-        times = self.raw.times
-        seizure_mask = np.zeros(len(times), dtype=int)
-
-        for i in range(len(times)):
-            if np.any(self.eeg_data[:, i] >= self.threshold):
-                seizure_mask[i] = 1
-
-        plt.plot(times, self.eeg_data.T)
-        plt.xlabel('Time (s)')
-        plt.ylabel('EEG Data')
-        plt.legend(self.matched_channels)
-
-        plt.twinx()
-        plt.plot(times, seizure_mask, 'r', alpha=0.5)
-        plt.ylabel('Seizure Mask')
-
-        #plt.show()
-    
-    def channel_mask_prepare(self):
-        return  {
-            'Fp1': [],
-            'Fp2': [],
-            'F7': [],
-            'F3': [],
-            'Fz': [],
-            'F4': [],
-            'F8': [],
-            'T3': [],
-            'C3': [],
-            'Cz': [],
-            'C4': [],
-            'T4': [],
-            'T5': [],
-            'P3': [],
-            'Pz': [],
-            'P4': [],
-            'T6': [],
-            'O1': [],
-            'O2': []
-        }
-    
-    def get_attack_csv(self,start_attack_sample, end_attack_sample, end_record_sample, no):
-        #start_attack_sample = 624640 
-        #end_attack_sample = 652288
-        #no = 1
-
+    def get_attack_csv(self, start_attack_sample, end_attack_sample, end_record_sample, no):
+        eeg_data, _, _ = self.process_eeg_data()
 
         len_attack = end_attack_sample - start_attack_sample
-        start_record = max(start_attack_sample - len_attack//2,1)
-        end_record = min(end_attack_sample + len_attack//2, end_record_sample-1)
-        print(end_record_sample)
-
+        start_record = max(start_attack_sample - len_attack // 2, 0)  # Adjusted to start from 0
+        end_record = min(end_attack_sample + len_attack // 2, end_record_sample)
+        print("end_rcord_sample", end_record_sample)
+        print("end_record", end_record)
         seizure_mask = self.channel_mask_prepare()
         training_mask = self.channel_mask_prepare()
-        
+
         for j, channel in enumerate(self.channels_of_interest):
             channel_mask = []
             channel_mask_training = []
             for i in range(start_attack_sample, end_attack_sample):
-                channel_mask.append(self.eeg_data[j,i])
+                if i < eeg_data.shape[1]:
+                    channel_mask.append(eeg_data[j, i])
 
             for i in range(start_record, end_record):
-                channel_mask_training.append(self.eeg_data[j,i])
+                if i < eeg_data.shape[1]:
+                    channel_mask_training.append(eeg_data[j, i])
             seizure_mask[channel] = channel_mask
             training_mask[channel] = channel_mask_training
-        self.save_mask_to_csv(seizure_mask,f'./masks/{no}_only_attack.csv')
-        self.save_mask_to_csv(training_mask,f'./masks/{no}_training_record.csv')
 
-#directory = './'
+        self.save_mask_to_csv(seizure_mask, f'./masks/{no}_only_attack.csv')
+        self.save_mask_to_csv(training_mask, f'./masks/{no}_training_record.csv')
 
-files_list = ["PN00-1.edf"]
-channels_of_interest = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 'Cz', 'C4', 'T4', 'T5', 'P3', 'Pz',
-                            'P4', 'T6', 'O1', 'O2']
+    def get_sample_number(self, reg_start, reg_end, attack_start, attack_end, Hz, output_file):
+        reg_start = datetime.strptime(reg_start, "%H.%M.%S")
+        reg_end = datetime.strptime(reg_end, "%H.%M.%S")
+        start = datetime.strptime(attack_start, "%H.%M.%S")
+        end = datetime.strptime(attack_end, "%H.%M.%S")
 
-#for file_name in files_list:
-#    analyzer = EEGAnalyzer(file_name, channels_of_interest, step=1, threshold=0.00075) #step=co jaki krok ma zapisywać threshold=od jakiej wartości(>=) ma szukać
-#    #self.eeg_data, self.matched_channels, self.sfreq, self.raw
-#    print(len(analyzer.eeg_data))
-#    print(len(analyzer.matched_channels))
-#    print(analyzer.sfreq)
-#    print(len(analyzer.raw))
-#    analyzer.get_attack_csv()
-#
-    #seizure_mask = analyzer.generate_seizure_mask()
-    #analyzer.save_mask_to_csv(seizure_mask)
-    #analyzer.plot_eeg_data()  #Dużo czasu zajmuje a nie jest niezbędne
+        if start < reg_start:
+            start += timedelta(hours=24)
 
-#pogrupowanie poprzez klastry, użyć modelu
+        start = reg_start.replace(hour=start.hour, minute=start.minute, second=start.second)
+        end = reg_start.replace(hour=end.hour, minute=end.minute, second=end.second)
+        seconds_start_midnight = int((start - reg_start).total_seconds())
+        seconds_end_midnight = int((end - reg_start).total_seconds())
 
-def get_sample_number(start, end, search_start_attack,search_end_attack,Hz):
-    reg_start = datetime.strptime(start, "%H.%M.%S")
-    reg_end = datetime.strptime(end, "%H.%M.%S")
+        print("times", seconds_start_midnight, seconds_end_midnight)
+        if reg_end < reg_start:
+            reg_end += timedelta(hours=24)
 
-    start = datetime.strptime(search_start_attack, "%H.%M.%S")
-    end = datetime.strptime(search_end_attack, "%H.%M.%S")
-    seconds_start = int((start - reg_start).total_seconds())
-    seconds_end = int((end - reg_start).total_seconds())
-    end_second = int((reg_end-reg_start).total_seconds())
+        seconds_reg_end_midnight = int((reg_end - reg_start).total_seconds())
 
-    print(seconds_start*Hz, seconds_end*Hz)
-    return seconds_start*Hz, seconds_end*Hz, end_second*Hz
+        if seconds_start_midnight < 0:
+            seconds_start_midnight += 24 * 3600
+        if seconds_end_midnight < 0:
+            seconds_end_midnight += 24 * 3600
 
-start,end,end_sec=get_sample_number("20.51.43", "21.26.25", "21.08.29","21.09.43", 512)
+        output_text = f"{seconds_start_midnight * Hz} {seconds_end_midnight * Hz}"
 
-file_name = ["PN00-1.edf"]
-channels_of_interest = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 'Cz', 'C4', 'T4', 'T5', 'P3', 'Pz',
-                            'P4', 'T6', 'O1', 'O2']
+        with open(output_file, 'a') as file:
+            file.write(output_text + '\n')
 
-anylzer = EEGAnalyzer(file_name[0], channels_of_interest, step=1, threshold=0.00075)
-anylzer.get_attack_csv(start,end,end_sec,4)
+        print(output_text)
+
+        return int(seconds_start_midnight * Hz), int(seconds_end_midnight * Hz), int(seconds_reg_end_midnight * Hz)
+
+    def channel_mask_prepare(self):
+        channel_mask = {}
+        for channel in self.channels_of_interest:
+            channel_mask[channel] = []
+        return channel_mask
+
+time_file = "badaniaDane_Test.txt"
+
+with open(time_file, 'r') as file:
+    reader = csv.DictReader(file, delimiter=';')
+
+    for i, row in enumerate(reader):
+        file_name = row['File name']
+        reg_start = row['Registration start time']
+        reg_end = row['Registration end time']
+        attack_start = row['Seizure start time']
+        attack_end = row['Seizure end time']
+
+        eeg_processor_plotter = EEGProcessorAndPlotter(file_name, time_file)
+        #eeg_processor_plotter.plot_eeg_channels()
+        eeg_processor_plotter.save_eeg_data_to_csv(f"all_channel_samples{i}")
+        output_file_path = f"{os.path.splitext(file_name)[0]}_output.csv"
+
+        start, end, end_sec = eeg_processor_plotter.get_sample_number(reg_start, reg_end, attack_start, attack_end, 512, output_file_path)
+        eeg_processor_plotter.get_attack_csv(start, end, end_sec, i + 1)
