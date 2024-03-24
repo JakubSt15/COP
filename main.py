@@ -155,7 +155,7 @@ with open(time_file, 'r') as file:
 
         eeg_processor_plotter = EEGProcessorAndPlotter(file_name, time_file)
         #eeg_processor_plotter.plot_eeg_channels()
-        eeg_processor_plotter.save_eeg_data_to_csv(f"all_channel_samples{i}")
+        eeg_processor_plotter.save_eeg_data_to_csv(f"all_channel_samples{i}.csv")
         output_file_path = f"{os.path.splitext(file_name)[0]}_output.csv"
 
         start, end, end_sec = eeg_processor_plotter.get_sample_number(reg_start, reg_end, attack_start, attack_end, 512, output_file_path)
