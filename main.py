@@ -11,7 +11,7 @@ class EEGProcessorAndPlotter:
         self.file_path = file_path
         self.time_file = time_file
         self.raw = self.load_raw_data()
-        self.channels_of_interest = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 'Cz', 'C4', 'T4', 'T5', 'P3', 'Pz', 'P4', 'T6', 'O1', 'O2']
+        self.channels_of_interest = ['Fp1', 'F3', 'C3', 'P3', 'O1', 'F7', 'T3', 'T5', 'Fz', 'Cz', 'Pz', 'Fp2', 'F4', 'C4', 'P4', 'O2', 'F8', 'T4', 'T6']
 
     def load_raw_data(self):
         raw = mne.io.read_raw_edf(self.file_path, preload=True)
@@ -22,8 +22,8 @@ class EEGProcessorAndPlotter:
         matched_channels = self.fuzzy_channel_matching(raw_channel_names)
         picks = mne.pick_channels(raw_channel_names, include=matched_channels)
         eeg_data = self.raw.get_data(picks=picks) * 1000000
-        #print("raw_channel_names: ", raw_channel_names, "\n",
-        #      "matched_channels: ", matched_channels)
+        print("raw_channel_names: ", raw_channel_names, "\n",
+              "matched_channels: ", matched_channels)
         return eeg_data, self.raw.times, self.raw.info['sfreq']
 
     def plot_eeg_channels(self):
@@ -48,22 +48,25 @@ class EEGProcessorAndPlotter:
         plt.show()
 
     def fuzzy_channel_matching(self, raw_channel_names):
-        matched_channels = [process.extractOne(channel, raw_channel_names)[0] for channel in
-                            self.channels_of_interest]
+        matched_channels = []
+        for channel in self.channels_of_interest:
+            matched_channel, score = process.extractOne(channel, raw_channel_names)
+            if score < 90:  # Próg oceny dopasowania
+                print(
+                    f"Nie można znaleźć dokładnego dopasowania dla kanału {channel}. Najlepsze dopasowanie to {matched_channel} z wynikiem {score}.")
+            matched_channels.append(matched_channel)
         return matched_channels
 
     def save_eeg_data_to_csv(self, output_file):
         eeg_data, _, _ = self.process_eeg_data()
 
-        with open(output_file, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(self.channels_of_interest)
+        df = pd.DataFrame(eeg_data.T, columns=self.channels_of_interest)
 
-            for i in range(len(eeg_data[0])):
-                row = []
-                for j in range(len(eeg_data)):
-                    row.append(eeg_data[j, i])
-                writer.writerow(row)
+        df = df[self.channels_of_interest]
+
+        df.to_csv(output_file, sep=',', index=False)
+
+        print("Data saved to", output_file)
 
     def save_mask_to_csv(self, mask, path=None):
         directory = os.path.dirname(path)
@@ -154,8 +157,8 @@ with open(time_file, 'r') as file:
         attack_end = row['Seizure end time']
 
         eeg_processor_plotter = EEGProcessorAndPlotter(file_name, time_file)
-        #eeg_processor_plotter.plot_eeg_channels()
-        eeg_processor_plotter.save_eeg_data_to_csv(f"all_channel_samples{i}.csv")
+        eeg_processor_plotter.plot_eeg_channels()
+        eeg_processor_plotter.save_eeg_data_to_csv(f"./Entire_Sample/all_channel_samples_{i}.csv")
         output_file_path = f"{os.path.splitext(file_name)[0]}_output.csv"
 
         start, end, end_sec = eeg_processor_plotter.get_sample_number(reg_start, reg_end, attack_start, attack_end, 512, output_file_path)
