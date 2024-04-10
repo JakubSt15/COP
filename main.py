@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from fuzzywuzzy import process
 import pandas as pd
 from datetime import datetime, timedelta
+import numpy as np
 
 class EEGProcessorAndPlotter:
     def __init__(self, file_path, time_file):
@@ -13,6 +14,17 @@ class EEGProcessorAndPlotter:
         self.raw = self.load_raw_data()
         self.channels_of_interest = ['Fp1', 'F3', 'C3', 'P3', 'O1', 'F7', 'T3', 'T5', 'Fz', 'Cz', 'Pz', 'Fp2', 'F4', 'C4', 'P4', 'O2', 'F8', 'T4', 'T6']
 
+    def label_column(self, start_attack_sample, end_attack_sample, end_record_sample, output_csv):
+
+        attack_column = np.zeros(end_record_sample)
+
+        attack_column[start_attack_sample:end_attack_sample] = 1
+
+        df = pd.DataFrame({'Attack': attack_column})
+
+        df.to_csv(output_csv, index=False)
+
+        print("Attack column saved to", output_csv)
     def load_raw_data(self):
         raw = mne.io.read_raw_edf(self.file_path, preload=True)
         return raw
@@ -64,9 +76,7 @@ class EEGProcessorAndPlotter:
 
         df = df[self.channels_of_interest]
 
-        df.to_csv(output_file, sep=',', index=False)
-
-        print("Data saved to", output_file)
+        df.to_csv(output_file, sep=',', index=False, header=False)
 
     def save_mask_to_csv(self, mask, path=None):
         directory = os.path.dirname(path)
@@ -75,7 +85,21 @@ class EEGProcessorAndPlotter:
 
         path = self.output_csv_path if path is None else path
         df = pd.DataFrame(mask)
-        df.to_csv(path, index=False)
+        df.to_csv(path, index=False, header=False)
+
+    def label_column(self, start_attack_sample, end_attack_sample, end_record_sample, no):
+        eeg_data, _, _ = self.process_eeg_data()
+
+        len_attack = end_attack_sample - start_attack_sample
+        start_record_sample = max(start_attack_sample - len_attack // 2, 0)  # Adjusted to start from 0
+        end_record_sample = min(end_attack_sample + len_attack // 2, end_record_sample)
+        labels_training = np.zeros(end_record_sample - start_record_sample)
+        labels_training[start_attack_sample - start_record_sample:end_attack_sample - start_record_sample] = 1
+        labels_attack = np.zeros(int(end_attack_sample - start_attack_sample))
+        labels_attack[0:end_attack_sample-start_attack_sample] = 1
+
+        self.save_mask_to_csv(labels_training, f'./Masks/{no}_label_only_training.csv')
+        self.save_mask_to_csv(labels_attack, f'./Masks/{no}_label_only_attack.csv')
 
     def get_attack_csv(self, start_attack_sample, end_attack_sample, end_record_sample, no):
         eeg_data, _, _ = self.process_eeg_data()
@@ -83,8 +107,8 @@ class EEGProcessorAndPlotter:
         len_attack = end_attack_sample - start_attack_sample
         start_record = max(start_attack_sample - len_attack // 2, 0)  # Adjusted to start from 0
         end_record = min(end_attack_sample + len_attack // 2, end_record_sample)
-        print("end_rcord_sample", end_record_sample)
-        print("end_record", end_record)
+        print("start_record", start_record)
+        print("attack_sample", end_record)
         seizure_mask = self.channel_mask_prepare()
         training_mask = self.channel_mask_prepare()
 
@@ -94,7 +118,6 @@ class EEGProcessorAndPlotter:
             for i in range(start_attack_sample, end_attack_sample):
                 if i < eeg_data.shape[1]:
                     channel_mask.append(eeg_data[j, i])
-
             for i in range(start_record, end_record):
                 if i < eeg_data.shape[1]:
                     channel_mask_training.append(eeg_data[j, i])
@@ -157,9 +180,10 @@ with open(time_file, 'r') as file:
         attack_end = row['Seizure end time']
 
         eeg_processor_plotter = EEGProcessorAndPlotter(file_name, time_file)
-        eeg_processor_plotter.plot_eeg_channels()
+        #eeg_processor_plotter.plot_eeg_channels()
         eeg_processor_plotter.save_eeg_data_to_csv(f"./Entire_Sample/all_channel_samples_{i}.csv")
         output_file_path = f"{os.path.splitext(file_name)[0]}_output.csv"
 
         start, end, end_sec = eeg_processor_plotter.get_sample_number(reg_start, reg_end, attack_start, attack_end, 512, output_file_path)
+        eeg_processor_plotter.label_column(start, end, end_sec, i+1)
         eeg_processor_plotter.get_attack_csv(start, end, end_sec, i + 1)
