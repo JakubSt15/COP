@@ -24,15 +24,17 @@ tf.get_logger().setLevel('FATAL')
 
 
 class Ui_MainWindow(object):
-
     def __init__(self, MainWindow):
+        self.setup_initial_values()
+        self.setup_timers()
+        self.setupUi(MainWindow)
+
+    def setup_initial_values(self):
         mne.set_log_level('CRITICAL')
         self.timerStatus = False
         self.signalFrequency = 512
         self.elapsed_time = 0
         self.start_time = 0
-        self.timer = QtCore.QTimer()
-        self.signalTimer = QtCore.QTimer()
         self.plot_extension = 0
         self.data_times = 32
         self.channels_to_plot = ['EEG Fp1', 'EEG F3', 'EEG C3',
@@ -41,98 +43,93 @@ class Ui_MainWindow(object):
                             'EEG Fp2', 'EEG F4', 'EEG C4', 'EEG P4',
                             'EEG O2', 'EEG F8', 'EEG T4', 'EEG T6']
         self.temp = [0] * len(self.channels_to_plot)
-        self.CloseButton = None
-        self.StopButton = None
-        self.SaveButton = None
-        self.canvas = None
-        self.figure, self.axes = None, None
-        self.data_buffers = None
         self.source_initial_range = 100
         self.source_current_start_idx = 0
         self.source_current_end_idx = 32
 
-        self.setupUi(MainWindow)
-
+    def setup_timers(self):
+        self.timer = QtCore.QTimer()
+        self.signalTimer = QtCore.QTimer()
         time = 128
         self.signalTimer.setInterval(time)
         self.signalTimer.timeout.connect(self.signal_update_time)
-
         self.timer.setInterval(time)
         self.timer.timeout.connect(self.update_plot)
-        ''' Setup UI variables'''
 
     def setupUi(self, MainWindow):
+        self.setup_main_window(MainWindow)
+        centralwidget = self.setup_central_widget(MainWindow)
+        self.setup_buttons(centralwidget)
+        layout = self.setup_layout(centralwidget)
+        self.setup_slider_and_listwidget(layout)
+        self.load_file()
+        self.retranslateUi(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def setup_main_window(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
-        centralwidget = QtWidgets.QWidget(MainWindow)
-        centralwidget.setObjectName("centralwidget")
-
-        self.CloseButton = QtWidgets.QPushButton("Close", centralwidget)
-        self.CloseButton.clicked.connect(self.close_window)
-
-        self.StopButton = QtWidgets.QPushButton("Stop", centralwidget)
-        self.StopButton.clicked.connect(self.stop_timer)
-
-        self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
-        self.SaveButton.clicked.connect(self.save_to_edf)
-
-        MainWindow.setCentralWidget(centralwidget)
         statusbar = QtWidgets.QStatusBar(MainWindow)
         statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(statusbar)
 
+    def setup_central_widget(self, MainWindow):
+        centralwidget = QtWidgets.QWidget(MainWindow)
+        centralwidget.setObjectName("centralwidget")
+        MainWindow.setCentralWidget(centralwidget)
+        return centralwidget
+
+    def setup_buttons(self, centralwidget):
+        self.CloseButton = QtWidgets.QPushButton("Close", centralwidget)
+        self.CloseButton.clicked.connect(self.close_window)
+        self.StopButton = QtWidgets.QPushButton("Stop", centralwidget)
+        self.StopButton.clicked.connect(self.stop_timer)
+        self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
+        self.SaveButton.clicked.connect(self.save_to_edf)
+
+    def setup_layout(self, centralwidget):
         layout = QtWidgets.QVBoxLayout(centralwidget)
-
         self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
+        self.setup_figure_and_canvas(layout, centralwidget)
+        self.setup_button_layout(layout)
+        return layout
 
+    def setup_figure_and_canvas(self, layout, MainWindow):
         self.figure, self.axes = plt.subplots(len(self.channels_to_plot), 1, sharex=True, figsize=(10, 20))
         plt.subplots_adjust(bottom=0.05, left=0.005, top=0.95)
         for i, _ in enumerate(self.channels_to_plot):
             self.axes[i].set_yticklabels([])
-
         self.axes[-1].set_xlabel('Time')
-
         self.canvas = FigureCanvas(self.figure)
         toolbar = NavigationToolbar2QT(self.canvas, MainWindow)
         layout.addWidget(toolbar)
         layout.addWidget(self.canvas)
+        self.lines = [ax.plot([], [])[0] for ax in self.axes]  # Initialize lines
 
+    def setup_button_layout(self, layout):
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.addWidget(self.StopButton)
         buttonLayout.addWidget(self.CloseButton)
         buttonLayout.addWidget(self.SaveButton)
         layout.addLayout(buttonLayout)
 
+    def setup_slider_and_listwidget(self, layout):
         self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.setRange(0, 64)
         self.slider.setValue(0)
         self.slider.sliderReleased.connect(self.slider_update_plot)
-        # layout.addWidget(slider)
-
-        listwidget = QListWidget()
-        listwidget.insertItem(0, "0")
-        listwidget.insertItem(1, "128")
-        listwidget.insertItem(2, "192")
-        listwidget.insertItem(3, "256")
-        listwidget.insertItem(4, "320")
-        listwidget.insertItem(5, "384")
-        listwidget.insertItem(6, "448")
-        listwidget.insertItem(7, "512")
-        listwidget.insertItem(8, "1024")
-        listwidget.insertItem(9, "2048")
-        listwidget.insertItem(10, "4096")
-        listwidget.clicked.connect(self.clicked)
-        # layout.addWidget(listwidget)
-
+        listwidget = self.setup_listwidget()
         slider_Layout = QtWidgets.QHBoxLayout()
         slider_Layout.addWidget(self.slider)
         slider_Layout.addWidget(listwidget)
         layout.addLayout(slider_Layout)
-        self.load_file()
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        
+    def setup_listwidget(self):
+        listwidget = QListWidget()
+        for i, value in enumerate([0, 128, 192, 256, 320, 384, 448, 512, 1024, 2048, 4096]):
+            listwidget.insertItem(i, str(value))
+        listwidget.clicked.connect(self.clicked)
+        return listwidget  
 
     def epilepsy_prediction(self, data, frequency):
         model_predykcja = tf.keras.models.load_model('./Model/model_new.h5')
