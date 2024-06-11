@@ -4,7 +4,7 @@ from torch import nn
 from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
-
+from CommonTools.CommonTools import show_popup, QMessageBox
 class AttackModel(nn.Module):
     def __init__(self):
         super(AttackModel, self).__init__()
@@ -70,11 +70,8 @@ class AttackTrainer:
             val_loss = loss_fn(val_logits, val_labels)
             validationEpoch_loss.append(val_loss.detach().numpy())
             
-            if epoch % 100 == 0:
-                print(f"Epoch: {epoch} | Train Loss: {train_loss:.5f} | Validation Loss: {val_loss:.5f}")
 
         torch.save(model.state_dict(), self.model_save_path)
-        print(f"Model saved to {self.model_save_path}")
 
         if plot_loss: 
             plt.plot(trainingEpoch_loss, label='train_loss')
@@ -131,7 +128,6 @@ class MultiChannelAttackTrainer:
         val_attributes = torch.tensor(val_attributes, dtype=torch.float32)
         val_labels = torch.tensor(val_labels, dtype=torch.float32)
 
-        print(f"LENGTHS: {len(val_attributes)}, {len(val_labels)}")
         model = MultiChannelAttackModel()
         loss_fn = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.SGD(params=model.parameters(), lr=self.learning_rate)
@@ -153,12 +149,9 @@ class MultiChannelAttackTrainer:
             val_loss = loss_fn(val_logits, val_labels)
             validationEpoch_loss.append(val_loss.detach().numpy())
             
-            if epoch % 100 == 0:
-                print(f"Epoch: {epoch} | Train Loss: {train_loss:.5f} | Validation Loss: {val_loss:.5f}")
 
         torch.save(model.state_dict(), self.model_save_path)
-        print(f"Model saved to {self.model_save_path}")
-
+        show_popup("Model saved", f"Model saved to {self.model_save_path}", QMessageBox.Information)
         if plot_loss: 
             plt.plot(trainingEpoch_loss, label='train_loss')
             plt.plot(validationEpoch_loss, label='val_loss')

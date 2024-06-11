@@ -9,7 +9,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import mne
 from mne import create_info
-
+from CommonTools.CommonTools import show_popup
+from PyQt5.QtWidgets import QFileDialog
 from DoctorMenu import DoctorMenuList
 from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_from_predictions, \
     prepare_prediction_multi_channel_datasets
@@ -118,10 +119,10 @@ class Ui_MainWindow(object):
         self.slider.setRange(0, 64)
         self.slider.setValue(0)
         self.slider.sliderReleased.connect(self.slider_update_plot)
-        listwidget = self.setup_listwidget()
+        self.listwidget = self.setup_listwidget()
         slider_Layout = QtWidgets.QHBoxLayout()
         slider_Layout.addWidget(self.slider)
-        slider_Layout.addWidget(listwidget)
+        slider_Layout.addWidget(self.listwidget)
         layout.addLayout(slider_Layout)
 
     def setup_listwidget(self):
@@ -232,7 +233,6 @@ class Ui_MainWindow(object):
             self.data_times = 0
             values_list = np.array(list(self.data_buffers.values()))
             self.temp = self.epilepsy_prediction(values_list[:, 0].T, self.signalFrequency)
-            print(self.temp)
             for channel in self.channels_to_plot:
                 self.data_buffers[channel] = (
                 self.data_buffers[channel][0][-4096:], self.data_buffers[channel][1][-4096:])
@@ -307,11 +307,15 @@ class Ui_MainWindow(object):
             sfreq=self.signalFrequency,
             ch_types='eeg'
         )
-
         raw = mne.io.RawArray(data_values.T, info)
 
-        file_path = './test.edf'
-        mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
+        options = QFileDialog.Options()
+        options |= QFileDialog.ShowDirsOnly
+        directory = QFileDialog.getExistingDirectory(None, "Wybierz folder zapisu", options=options)
+        if directory:
+            file_path = os.path.join(directory, 'test.edf')  
+            mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
+            show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
 
 
 if __name__ == "__main__":
