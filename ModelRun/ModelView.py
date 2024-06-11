@@ -1,17 +1,14 @@
+import os
+import numpy as np
+from scipy.signal import savgol_filter, butter, filtfilt, decimate
+import torch
+from sklearn.metrics import accuracy_score
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QListWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
-import torch
-from PyQt5 import QtCore, QtWidgets
-import mne
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
-from mne import create_info
-from sklearn.metrics import accuracy_score
-import torch
-import tensorflow as tf
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter, butter, filtfilt, decimate
+import mne
+from mne import create_info
 
 from DoctorMenu import DoctorMenuList
 from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_from_predictions, \
@@ -21,9 +18,15 @@ from Model.visualize import visualize_predicted_attack
 
 plt.style.use('dark_background')
 
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+import tensorflow as tf
+tf.get_logger().setLevel('FATAL')
+
+
 class Ui_MainWindow(object):
 
     def __init__(self, MainWindow):
+        mne.set_log_level('CRITICAL')
         self.timerStatus = False
         self.signalFrequency = 512
         self.elapsed_time = 0
