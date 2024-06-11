@@ -22,17 +22,14 @@ class ModelValidation:
                             'EEG Fz-Ref', 'EEG A1-Ref', 'EEG A2-Ref']
 
     def validate(self):
-        data = pd.read_csv('./model/train_data/_1.csv')
-        data2 = pd.read_csv('./_1_attack.csv')
-        data = self.filter.butter_filter(data,  512)
-        data = self.normalization.transform2d(data)
-        data = data.T
-        data = np.array(data).T
-        print(data.shape)
-        data = data[np.newaxis, :self.frame_size, :]
-        wynik = self.model.predict(data)
-        print(wynik.shape)
-        df = pd.DataFrame(wynik[0])
+        data = pd.read_csv('./model/cropped_records/4_training_record.csv').to_numpy().T
+        attributes_frames = tf.signal.frame(data, self.frame_size, self.frame_size)
+        attributes_frames = tf.math.reduce_mean(tf.math.square(attributes_frames), axis=2)
+        attributes_frames = attributes_frames.numpy().T
+        attributes_frames= tf.expand_dims(attributes_frames, axis=1, name=None)
+        wynik = self.model.predict(attributes_frames)
+        # wynik = wynik.round().astype(int)
+        df = pd.DataFrame(wynik)
         df.to_csv('predictions.csv')
 
 

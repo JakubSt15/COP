@@ -69,7 +69,7 @@ def visualize_kmeans(data):
 '''
 Gets the signals from csvand returns csv with their strengths
 '''
-def get_signal_strength(data):
+def get_signal_strength(data, no=0, onlyAttack=False):
     _data = csv_to_samples(data) if type(data) is str else data
     pasma = [[8, 13], [13,30]]
     Fs=512
@@ -85,7 +85,10 @@ def get_signal_strength(data):
             strengths_for_band.append(moc)
         moc_pasmowa.append(strengths_for_band)
     df = pd.DataFrame(moc_pasmowa)
-    df.to_csv(f'./model/moce/moc_{count_files("./model/moce")}.csv', index=False)
+    # df.to_csv(f'./model/moce/moc_{count_files("./model/moce")}.csv', index=False)
+    
+    att_name = 'only_attack' if onlyAttack else 'full'
+    df.to_csv(f'./model/moce/moc_{no}_{att_name}.csv', index=False)
 
 '''
 Gets data as path or ready data and returns clusterized labels
@@ -99,11 +102,21 @@ def get_kmeans_labels(data):
 '''
 Creates a mask of the moment of attack, it should be then pasted into its place in the big mask
 '''
-def create_mask_of_attack(data):
+def create_mask_of_attack(data, file, sample_start, sample_end):
+    df_full = pd.read_csv(f"model/cropped_records/{file}_training_record.csv")
+    
     labels = np.array(get_kmeans_labels(data))
-    mask = np.tile(labels, (35840, 1))
-    df = pd.DataFrame(mask)
-    df.to_csv('output.csv', index=False)
+    attack_len = sample_end - sample_start
+
+    full_mask = np.tile([0]*labels, (df_full.shape[0], 1))
+    attack_mask = np.tile(labels, (attack_len, 1))
+
+    full_mask[attack_len//2:(df_full.shape[0] - attack_len//2)] = attack_mask 
+
+    df = pd.DataFrame(full_mask)
+
+
+    df.to_csv(f'model/train_data/mask_attack_{file}.csv', index=False)
 
 
 '''
@@ -118,6 +131,9 @@ def count_files(dir):
     return count
 
 
-# visualize_kmeans("./model/moce/moc_0.csv")
-get_signal_strength("./model/train_data/_1.csv")
-print(create_mask_of_attack("./model/moce/moc_0.csv"))
+print(get_kmeans_labels("./model/moce/moc_1_only_attack.csv"))
+file = 4
+# get_signal_strength(f"./model/cropped_records/{file}_only_attack.csv", file, True)
+# get_signal_strength(f"./model/cropped_records/{file}_training_record.csv", file, False)
+
+# create_mask_of_attack(f"./model/moce/moc_{file}_only_attack.csv", file, 515072, 552960)

@@ -5,6 +5,8 @@ import pandas as pd
 from normalization import Normalization
 from filter import Filter
 
+fx = './model/train_data/mask_attack_'
+fy = './model/cropped_records/'
 class PreparingDatasets:
     def __init__(self):
         self.selected_ch = ['EEG Fp1-Ref', 'EEG Fp2-Ref', 'EEG F3-Ref', 'EEG F4-Ref',
@@ -12,7 +14,12 @@ class PreparingDatasets:
                             'EEG O1-Ref', 'EEG O2-Ref', 'EEG F7-Ref', 'EEG F8-Ref',
                             'EEG T3-Ref', 'EEG T4-Ref', 'EEG T5-Ref', 'EEG T6-Ref',
                             'EEG Fz-Ref', 'EEG A1-Ref', 'EEG A2-Ref']
-        self.train_files = ['./model/training_data/_1.csv']
+        self.label_files = [f'{fx}1.csv',f'{fx}2.csv',  f'{fx}4.csv']
+        self.train_files = [
+        f'{fy}1_training_record.csv',
+        f'{fy}2_training_record.csv',
+        f'{fy}4_training_record.csv'
+        ]
         self.frequency = 512
         self.frame_size = 1000
         self.normalization = Normalization()
@@ -27,18 +34,15 @@ class PreparingDatasets:
         data_shifted = np.transpose(data_shifted, (0, 2, 1))
         return tf.convert_to_tensor(data_shifted)
 
-    def read_and_prepare_data(self, file, normalizator):
-        # edf = mne.io.read_raw_edf(file, preload=True)
-        # ind_of_channels = mne.pick_channels(edf.ch_names,
-                                            # include=self.selected_ch)
-        # data = edf.get_data()
-        # data = data[ind_of_channels]
-        df_x = pd.read_csv('./model/train_data/_1.csv').T
-        df_y = pd.read_csv('./_1_attack.csv').T
+    def read_and_prepare_data(self, train_files, label_files, normalizator):
+        x_file = train_files
+        y_file = label_files
+        df_x = pd.read_csv(x_file).T
+        df_y = pd.read_csv(y_file).T
 
         data = self.filter.butter_filter(df_x, self.frequency)
         data = normalizator.transform2d(data)
-        file = file[:-4]
+        file = x_file[:-4]
         x = self.shift_edf(data, 0)
 
         y = self.shift_edf(df_y, 0)
@@ -52,8 +56,8 @@ class PreparingDatasets:
         self.normalization.fit_all(self.train_files)
         np.savetxt('min.out', self.normalization.min, delimiter=',')
         np.savetxt('max.out', self.normalization.max, delimiter=',')
-        for file in self.train_files:
-            self.read_and_prepare_data(file, self.normalization)
+        for file_number in range(len(self.train_files)):
+            self.read_and_prepare_data(self.train_files[file_number], self.label_files[file_number], self.normalization)
 
 
 pr = PreparingDatasets()

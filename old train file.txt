@@ -1,0 +1,77 @@
+ #############
+
+        # attr_df = pd.read_csv('./model/cropped_records/2_training_record.csv').to_numpy().T
+        # labels_df = pd.read_csv('./model/train_data/mask_attack_2.csv').to_numpy().T
+
+        # attributes_frames = tf.signal.frame(attr_df, self.frame_size, self.frame_step)
+        # labels_frames = tf.signal.frame(labels_df, self.frame_size, self.frame_step)
+
+        # attributes_frames_reduced_mean = tf.math.reduce_mean(tf.math.square(attributes_frames), axis=2)
+
+
+        # labels = []
+        # for channel in labels_frames:
+        #     channel_frame = np.any(channel == 1, axis=1).astype(int)
+        #     labels.append(channel_frame.tolist())
+
+        # labels = np.array(labels)
+
+
+        # attributes_frames_reduced_mean_transposed, labels = attributes_frames_reduced_mean.numpy().T, labels.T
+
+        # if verbose > 0: 
+        #     attacked = 0
+        #     all = len(labels)
+        #     print(clr.GREEN,"==========================L-A-B-E-L-S========================")
+            
+        #     for l in labels:
+        #         if verbose > 1: print("| \t", l)
+        #         if 1 in l:
+        #             attacked += 1  
+        #     if verbose > 1:  print(clr.GREEN,"=============================================================")
+        #     print(clr.GREEN,f"| All                    : {all}")
+        #     print(clr.GREEN,f"| Frames without attack  : {all-attacked}\t| {round(100*((all-attacked)/all), 2)}%")
+        #     print(clr.GREEN,f"| Frames with attack     : {attacked}\t| {round(100*(attacked/all), 2)}%", clr.END)
+
+        # attributes_expanded_dims= tf.expand_dims(attributes_frames_reduced_mean_transposed, axis=1, name=None)
+
+        # train_dataset = tf.data.Dataset.from_tensor_slices((attributes_expanded_dims, labels))
+        # train_dataset_shuffled = train_dataset.shuffle(train_dataset.cardinality()).batch(self.batch_size)
+        
+        # if verbose > 0:
+        #     print(clr.GREEN,"===============S-H-U-F-F-L-E-D===L-A-B-E-L-S=================")
+        #     labels_dataset = train_dataset_shuffled.map(lambda x, y: y)
+        #     attacked = 0
+        #     all = len(labels)
+            
+        #     for l in labels_dataset:
+        #         for label in l:
+        #             if verbose > 1: print("| \t", label.numpy())
+        #             if 1 in label:
+        #                 attacked += 1  
+        #     if verbose > 1: print(clr.GREEN,"=============================================================")
+        #     print(clr.GREEN,f"| All                    : {all}")
+        #     print(clr.GREEN,f"| Frames without attack  : {all-attacked}\t| {round(100*((all-attacked)/all), 2)}%")
+        #     print(clr.GREEN,f"| Frames with attack     : {attacked}\t| {round(100*(attacked/all), 2)}%", clr.END)
+
+        # if verbose > 0:
+        #     print(clr.CYAN , "========================S-H-A-P-E-S==========================")
+        #     print(clr.CYAN , "| attributes shape from df                   : ", clr.BOLD , attr_df.shape , clr.END)
+        #     print(clr.CYAN , "|------------------------------------------------------------")
+        #     print(clr.CYAN , "| attributes frames after tf.signal.frame    : ", clr.BOLD , attributes_frames.shape , clr.END)
+        #     print(clr.CYAN , "| labels frames after tf.signal.frame        : ", clr.BOLD , labels_frames.shape , clr.END)
+        #     print(clr.CYAN , "|------------------------------------------------------------")
+        #     print(clr.CYAN , "| attributes after reduce_mean (mooc sygnału): ", clr.BOLD , attributes_frames_reduced_mean.shape , clr.END)
+        #     print(clr.CYAN , "|------------------------------------------------------------")
+        #     print(clr.CYAN , "| attributes frames after T                  : ", clr.BOLD , attributes_frames_reduced_mean_transposed.shape , clr.END)
+        #     print(clr.CYAN , "| labels frames after T and minimizing       : ", clr.BOLD , labels.shape , clr.END)
+        #     print(clr.CYAN , "|------------------------------------------------------------")
+        #     print(clr.CYAN , "| attributes frames after expand_dims        : ", clr.BOLD , attributes_expanded_dims.shape , clr.END)
+        #     print(clr.CYAN , "|------------------------------------------------------------")
+        #     print(clr.CYAN , "| Train dataset after from_tensor_slices     : ", clr.BOLD , train_dataset , clr.END)
+        #     print(clr.CYAN , "|------------------------------------------------------------")
+        #     print(clr.CYAN , "| Train dataset after shuffle                : ", clr.BOLD , train_dataset_shuffled , clr.END)
+        #     print(clr.CYAN , "|-----------------------------------------------------------")
+        #     print(clr.END)
+        #     if block_on_verbose is True: return
+        # return train_dataset_shuffled
