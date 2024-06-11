@@ -310,10 +310,10 @@ class Ui_MainWindow(object):
         raw = mne.io.RawArray(data_values.T, info)
 
         options = QFileDialog.Options()
-        options |= QFileDialog.ShowDirsOnly
-        directory = QFileDialog.getExistingDirectory(None, "Wybierz folder zapisu", options=options)
-        if directory:
-            file_path = os.path.join(directory, 'test.edf')  
+        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)", options=options)
+        if file_path:
+            if not file_path.endswith('.edf'):
+                file_path += '.edf'
             mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
             show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
 
