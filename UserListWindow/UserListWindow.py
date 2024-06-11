@@ -51,7 +51,7 @@ class Ui_UserListWindow(object):
 
     def loadData(self):
         # Load data from CSV file
-        df = pd.read_csv('../Users.csv', delimiter=';')
+        df = pd.read_csv('Users.csv', delimiter=';')
 
         # Filter data where role is 1
         df_filtered = df[df['role'] == 1]

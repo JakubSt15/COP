@@ -130,7 +130,7 @@ class Ui_AddUser(object):
         role = "1"  # Domyślna rola ustawiona na 1
 
         # Zapisywanie użytkownika do pliku CSV
-        with open('../Users.csv', mode='a', newline='') as file:
+        with open('Users.csv', mode='a', newline='') as file:
             writer = csv.writer(file, delimiter=';')
             writer.writerow([user_id, name, surname, role, login, password])
 
@@ -147,7 +147,7 @@ class Ui_AddUser(object):
         existing_ids = set()  # Zbiór przechowujący istniejące ID użytkowników
 
         try:
-            with open('../Users.csv', mode='r') as file:
+            with open('Users.csv', mode='r') as file:
                 reader = csv.reader(file, delimiter=';')
                 next(reader)  # Pomija nagłówek
                 for row in reader:
