@@ -16,6 +16,7 @@ from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_f
     prepare_prediction_multi_channel_datasets
 from Model.train_attack import AttackModel, MultiChannelAttackModel
 from Model.visualize import visualize_predicted_attack
+import logging
 
 plt.style.use('dark_background')
 
@@ -133,12 +134,13 @@ class Ui_MainWindow(object):
         return listwidget  
 
     def epilepsy_prediction(self, data, frequency):
-        model_predykcja = tf.keras.models.load_model('./Model/model_new.h5')
+        model_predykcja = tf.keras.models.load_model('./Model/model.keras',)
 
         attack = prepare_dataset_attack_model(data, plot_verbose=False)
         a = np.array(attack)
         a = a[np.newaxis, :4]
-        y = model_predykcja.predict(a)
+        logging.getLogger("absl").setLevel(logging.ERROR)
+        y = model_predykcja.predict(a, verbose=0)
 
         attac_model_save_path = './Model/attack_model_pyTorch.pth'
 
@@ -228,14 +230,14 @@ class Ui_MainWindow(object):
             data_length = len(self.data_buffers[channel][0])
 
         self.data_times += self.signalFrequency // 16
-
-        if data_length > 4096 and (self.data_times % 512 == 0):
+        prediction_activaction_time = 2500
+        if data_length > prediction_activaction_time and (self.data_times % 512 == 0):
             self.data_times = 0
             values_list = np.array(list(self.data_buffers.values()))
             self.temp = self.epilepsy_prediction(values_list[:, 0].T, self.signalFrequency)
             for channel in self.channels_to_plot:
                 self.data_buffers[channel] = (
-                self.data_buffers[channel][0][-4096:], self.data_buffers[channel][1][-4096:])
+                self.data_buffers[channel][0][-prediction_activaction_time:], self.data_buffers[channel][1][-prediction_activaction_time:])
 
         else:
             self.temp = [0] * len(self.channels_to_plot)
