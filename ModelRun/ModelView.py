@@ -9,12 +9,14 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import mne
 from mne import create_info
-
+from CommonTools.CommonTools import show_popup
+from PyQt5.QtWidgets import QFileDialog
 from DoctorMenu import DoctorMenuList
 from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_from_predictions, \
     prepare_prediction_multi_channel_datasets
 from Model.train_attack import AttackModel, MultiChannelAttackModel
 from Model.visualize import visualize_predicted_attack
+import logging
 
 plt.style.use('dark_background')
 
@@ -118,10 +120,10 @@ class Ui_MainWindow(object):
         self.slider.setRange(0, 64)
         self.slider.setValue(0)
         self.slider.sliderReleased.connect(self.slider_update_plot)
-        listwidget = self.setup_listwidget()
+        self.listwidget = self.setup_listwidget()
         slider_Layout = QtWidgets.QHBoxLayout()
         slider_Layout.addWidget(self.slider)
-        slider_Layout.addWidget(listwidget)
+        slider_Layout.addWidget(self.listwidget)
         layout.addLayout(slider_Layout)
 
     def setup_listwidget(self):
@@ -132,12 +134,13 @@ class Ui_MainWindow(object):
         return listwidget  
 
     def epilepsy_prediction(self, data, frequency):
-        model_predykcja = tf.keras.models.load_model('./Model/model_new.h5')
+        model_predykcja = tf.keras.models.load_model('./Model/model.keras',)
 
         attack = prepare_dataset_attack_model(data, plot_verbose=False)
         a = np.array(attack)
         a = a[np.newaxis, :4]
-        y = model_predykcja.predict(a)
+        logging.getLogger("absl").setLevel(logging.ERROR)
+        y = model_predykcja.predict(a, verbose=0)
 
         attac_model_save_path = './Model/attack_model_pyTorch.pth'
 
@@ -227,15 +230,14 @@ class Ui_MainWindow(object):
             data_length = len(self.data_buffers[channel][0])
 
         self.data_times += self.signalFrequency // 16
-
-        if data_length > 4096 and (self.data_times % 512 == 0):
+        prediction_activaction_time = 2500
+        if data_length > prediction_activaction_time and (self.data_times % 512 == 0):
             self.data_times = 0
             values_list = np.array(list(self.data_buffers.values()))
             self.temp = self.epilepsy_prediction(values_list[:, 0].T, self.signalFrequency)
-            print(self.temp)
             for channel in self.channels_to_plot:
                 self.data_buffers[channel] = (
-                self.data_buffers[channel][0][-4096:], self.data_buffers[channel][1][-4096:])
+                self.data_buffers[channel][0][-prediction_activaction_time:], self.data_buffers[channel][1][-prediction_activaction_time:])
 
         else:
             self.temp = [0] * len(self.channels_to_plot)
@@ -307,11 +309,15 @@ class Ui_MainWindow(object):
             sfreq=self.signalFrequency,
             ch_types='eeg'
         )
-
         raw = mne.io.RawArray(data_values.T, info)
 
-        file_path = './test.edf'
-        mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)", options=options)
+        if file_path:
+            if not file_path.endswith('.edf'):
+                file_path += '.edf'
+            mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
+            show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
 
 
 if __name__ == "__main__":

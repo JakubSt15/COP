@@ -1,7 +1,7 @@
 import csv
 from PyQt5 import QtCore, QtWidgets
+from CommonTools.CommonTools import show_popup, QMessageBox
 from DoctorMenu.DoctorMenuList import Ui_MainWindow
-
 class Ui_LoginWindow(object):
     def setupUi(self, LoginWindow):
         LoginWindow.setObjectName("LoginWindow")
@@ -67,18 +67,13 @@ class Ui_LoginWindow(object):
 
             for user in users:
                 if user[4] == login and user[5] == password:
-                    print(f"Zalogowano użytkownika {user[1]} {user[2]} ({user[3]})")
+                    show_popup("Sukces", f"Zalogowano użytkownika {user[1]} {user[2]} ({user[3]})", QMessageBox.Information)
                     return True
 
-            print("Błędny login lub hasło")
             return False
 
         if not isValidLogin(login, password):
-            msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Critical)
-            msg.setText("Niepoprawny login lub hasło")
-            msg.setWindowTitle("Błąd logowania")
-            msg.exec_()
+            show_popup("Błąd", "Nieprawidłowe hasło!", QMessageBox.Warning)
         else:
             self.MenuList()
 

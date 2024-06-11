@@ -81,7 +81,6 @@ def set_labels_signal_power_by_frames(signal, frame_size, rollingN=0):
 
 
 def remove_outliers_by_median(series, window_size=100):
-    print("Removing outliers")
     cleaned_series = series.copy()
     N = len(series)
     for i in range(N):
@@ -92,7 +91,6 @@ def remove_outliers_by_median(series, window_size=100):
         if np.abs(series.iloc[i]) > abs(median):
             cleaned_series.iloc[i] = median
 
-        if i % 1000 == 0: print(f"Sample {i} / {N}")
     return cleaned_series
 
 '''
@@ -104,7 +102,6 @@ def process_attribute_channels(df, plot_verbose=False, rollingN=1500):
     for id, column in enumerate(df.T):
         if plot_verbose: plot_signal(column, title=f"Raw signal");
 
-        print(df)
         # Filtrowanie atrybutów
         column = filtfilt(*butter(5, [3, 13], btype='band', fs=512), column )
         if plot_verbose: plot_signal(column, title=f"Butter filtered signal [3 13]");
@@ -147,12 +144,9 @@ def prepare_dataset_attack_model(data_csv, shuffle=False, plot_verbose=False):
     attr_df = data_csv
 
     PROCESSED_CHANNELS = process_attribute_channels(attr_df, plot_verbose=plot_verbose, rollingN=ROLLING_N)
-    print(len(PROCESSED_CHANNELS))
     power_attributes = set_labels_signal_power_by_frames(PROCESSED_CHANNELS, FRAME_SIZE, rollingN=ROLLING_N)
-    print(len(power_attributes))
     attributes += power_attributes
 
-    print(type(attributes))
     return attributes
 
 
@@ -172,9 +166,7 @@ def get_one_channel_train_data(attr_df, labels_df, column_to_predict):
         labels = labels_df[labels_df.columns[column_to_predict]].values
     return attr, labels
 
-def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
-    print('Preparing multi channel dataset...')
-    
+def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):    
     all_df = []
     if isinstance(data_csv, pd.DataFrame):
         signal_csv, labels_csv = data_csv[0], data_csv[1]
@@ -194,9 +186,7 @@ def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
 
     for i in range(COLUMNS):
         attributes, labels = [], []
-        print(f'Current column: {i}')
         for id, df in enumerate(all_df):
-            print(f'\tCurrent file: {id}')
             attr_df = df[0]
             labels_df = df[1]
             attributes_raw, labels_raw = get_one_channel_train_data(attr_df, labels_df, i)
@@ -211,10 +201,6 @@ def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
             labels += labels_framed
             
             if len(attributes) != len(labels):
-                print("Inconsistent number of attributes and labels: ")
-                print("     Labels      : ", len(labels))
-                print("     attributes  : ", len(attributes))
-                print(f" Error occured on file no. {id}")
                 return -1
             
         channel_datasets.append({
@@ -228,7 +214,6 @@ def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
 
 
 def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast=False, rollingN=1500):
-    print('Preparing multi channel dataset...')
     
     all_df = []
     attr_df = data_csv
@@ -239,9 +224,7 @@ def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast
 
     for i in range(COLUMNS):
         attributes = []
-        print(f'Current column: {i}')
         for id, df in enumerate(all_df):
-            print(f'\tCurrent file: {id}')
             attr_df = df
 
             attributes_raw, _ = get_one_channel_train_data(attr_df, None, i)

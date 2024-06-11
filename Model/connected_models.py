@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from visualize import visualize_predicted_attack
+tf.get_logger().setLevel('FATAL')
 
 # data =  [
 #     ['./model_pytorch/records/1_training_record.csv', './model_pytorch/labels/1_training_labels.csv'],
@@ -74,4 +75,3 @@ for i in range(len(validation_data)):
     final_predictions.append(validation_predictions.numpy())
 
 final_predictions_df = pd.DataFrame(np.array(final_predictions))
-print(final_predictions_df)
