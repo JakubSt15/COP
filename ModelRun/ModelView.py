@@ -66,7 +66,6 @@ class Ui_MainWindow(object):
         centralwidget = self.setup_central_widget(MainWindow)
         self.setup_buttons(centralwidget)
         layout = self.setup_layout(centralwidget)
-        self.setup_slider_and_listwidget(layout)
         self.load_file()
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -97,21 +96,11 @@ class Ui_MainWindow(object):
         self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
         self.setup_figure_and_canvas(layout, centralwidget)
         self.setup_button_layout(layout)
+        self.setup_slider_and_listwidget(layout)
+
         return layout
 
     def setup_figure_and_canvas(self, layout, MainWindow):
-
-        # self.figure, self.axes = plt.subplots(len(self.channels_to_plot), 1, sharex=True, figsize=(10, 20))
-        # plt.subplots_adjust(bottom=0.05, left=0.005, top=0.95)
-        # for i, _ in enumerate(self.channels_to_plot):
-        #     self.axes[i].set_yticklabels([])
-        # self.axes[-1].set_xlabel('Time')
-        # self.canvas = FigureCanvas(self.figure)
-        # toolbar = NavigationToolbar2QT(self.canvas, MainWindow)
-        # layout.addWidget(toolbar)
-        # layout.addWidget(self.canvas)
-        # self.lines = [ax.plot([], [])[0] for ax in self.axes] # Initialize lines
-
         if self.raw == None: return
         self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw)
 
@@ -252,26 +241,6 @@ class Ui_MainWindow(object):
     def update_plot(self):
         if self.signalPlot is not None:
             self.signalPlot.update()
-       
-        # self.slider.setRange(0, self.source_initial_range - 64)
-        # self.slider.setValue(self.source_initial_range - 64)
-
-        # data, times = self.raw[:, self.source_current_start_idx:self.source_current_end_idx]
-
-        # for i, ax in enumerate(self.axes):
-        #     ax.clear()
-
-        #     color = 'red' if self.temp[i] == 1 else plt.cm.tab20(i)
-        #     ax.plot(times, data[i], label=self.channels_to_plot[i], color=color)
-
-        #     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        #     for spine in ['top', 'bottom', 'right', 'left']:
-        #         ax.spines[spine].set_visible(False)
-
-        #     ax.get_yaxis().set_visible(False)
-
-        # self.axes[-1].set_xlabel('Time')
-        # self.canvas.draw()
 
     def slider_update_plot(self):
         """Updates the plot based on the slider's current value."""
