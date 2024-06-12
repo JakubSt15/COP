@@ -15,6 +15,9 @@ from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_f
     prepare_prediction_multi_channel_datasets
 from Model.train_attack import AttackModel, MultiChannelAttackModel
 from Model.visualize import visualize_predicted_attack
+from ModelRun.Graph import SignalPlot
+
+import pyqtgraph as pg
 
 plt.style.use('dark_background')
 
@@ -25,6 +28,8 @@ tf.get_logger().setLevel('FATAL')
 
 class Ui_MainWindow(object):
     def __init__(self, MainWindow):
+        self.signalPlot = None
+        self.raw = None
         self.setup_initial_values()
         self.setup_timers()
         self.setupUi(MainWindow)
@@ -95,16 +100,20 @@ class Ui_MainWindow(object):
         return layout
 
     def setup_figure_and_canvas(self, layout, MainWindow):
-        self.figure, self.axes = plt.subplots(len(self.channels_to_plot), 1, sharex=True, figsize=(10, 20))
-        plt.subplots_adjust(bottom=0.05, left=0.005, top=0.95)
-        for i, _ in enumerate(self.channels_to_plot):
-            self.axes[i].set_yticklabels([])
-        self.axes[-1].set_xlabel('Time')
-        self.canvas = FigureCanvas(self.figure)
-        toolbar = NavigationToolbar2QT(self.canvas, MainWindow)
-        layout.addWidget(toolbar)
-        layout.addWidget(self.canvas)
-        self.lines = [ax.plot([], [])[0] for ax in self.axes]  # Initialize lines
+
+        # self.figure, self.axes = plt.subplots(len(self.channels_to_plot), 1, sharex=True, figsize=(10, 20))
+        # plt.subplots_adjust(bottom=0.05, left=0.005, top=0.95)
+        # for i, _ in enumerate(self.channels_to_plot):
+        #     self.axes[i].set_yticklabels([])
+        # self.axes[-1].set_xlabel('Time')
+        # self.canvas = FigureCanvas(self.figure)
+        # toolbar = NavigationToolbar2QT(self.canvas, MainWindow)
+        # layout.addWidget(toolbar)
+        # layout.addWidget(self.canvas)
+        # self.lines = [ax.plot([], [])[0] for ax in self.axes] # Initialize lines
+
+        if self.raw == None: return
+        self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw)
 
     def setup_button_layout(self, layout):
         buttonLayout = QtWidgets.QHBoxLayout()
@@ -241,26 +250,28 @@ class Ui_MainWindow(object):
             self.temp = [0] * len(self.channels_to_plot)
 
     def update_plot(self):
-        """Updates the plot based on the slider's current value."""
-        self.slider.setRange(0, self.source_initial_range - 64)
-        self.slider.setValue(self.source_initial_range - 64)
+        if self.signalPlot is not None:
+            self.signalPlot.update()
+       
+        # self.slider.setRange(0, self.source_initial_range - 64)
+        # self.slider.setValue(self.source_initial_range - 64)
 
-        data, times = self.raw[:, self.source_current_start_idx:self.source_current_end_idx]
+        # data, times = self.raw[:, self.source_current_start_idx:self.source_current_end_idx]
 
-        for i, ax in enumerate(self.axes):
-            ax.clear()
+        # for i, ax in enumerate(self.axes):
+        #     ax.clear()
 
-            color = 'red' if self.temp[i] == 1 else plt.cm.tab20(i)
-            ax.plot(times, data[i], label=self.channels_to_plot[i], color=color)
+        #     color = 'red' if self.temp[i] == 1 else plt.cm.tab20(i)
+        #     ax.plot(times, data[i], label=self.channels_to_plot[i], color=color)
 
-            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            for spine in ['top', 'bottom', 'right', 'left']:
-                ax.spines[spine].set_visible(False)
+        #     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        #     for spine in ['top', 'bottom', 'right', 'left']:
+        #         ax.spines[spine].set_visible(False)
 
-            ax.get_yaxis().set_visible(False)
+        #     ax.get_yaxis().set_visible(False)
 
-        self.axes[-1].set_xlabel('Time')
-        self.canvas.draw()
+        # self.axes[-1].set_xlabel('Time')
+        # self.canvas.draw()
 
     def slider_update_plot(self):
         """Updates the plot based on the slider's current value."""
