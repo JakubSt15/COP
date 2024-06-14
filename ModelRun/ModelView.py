@@ -9,7 +9,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import mne
 from mne import create_info
-
+import pandas as pd
 from DoctorMenu import DoctorMenuList
 from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_from_predictions, \
     prepare_prediction_multi_channel_datasets
@@ -31,12 +31,17 @@ class Ui_MainWindow(object):
         self.signalPlot = None
         self.raw = None
         self.setup_initial_values()
-        self.setup_timers()
         self.setupUi(MainWindow)
+
+        ''' Timer for updating plots '''
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(50)  # Update interval in milliseconds
+        self.timer.timeout.connect(self.update_plot)
+        self.timer.stop()
 
     def setup_initial_values(self):
         mne.set_log_level('CRITICAL')
-        self.timerStatus = False
+        self.isPlotting = False
         self.signalFrequency = 512
         self.elapsed_time = 0
         self.start_time = 0
@@ -51,15 +56,6 @@ class Ui_MainWindow(object):
         self.source_initial_range = 100
         self.source_current_start_idx = 0
         self.source_current_end_idx = 32
-
-    def setup_timers(self):
-        self.timer = QtCore.QTimer()
-        self.signalTimer = QtCore.QTimer()
-        time = 128
-        self.signalTimer.setInterval(time)
-        self.signalTimer.timeout.connect(self.signal_update_time)
-        self.timer.setInterval(time)
-        self.timer.timeout.connect(self.update_plot)
 
     def setupUi(self, MainWindow):
         self.setup_main_window(MainWindow)
@@ -87,7 +83,7 @@ class Ui_MainWindow(object):
         self.CloseButton = QtWidgets.QPushButton("Close", centralwidget)
         self.CloseButton.clicked.connect(self.close_window)
         self.StopButton = QtWidgets.QPushButton("Stop", centralwidget)
-        self.StopButton.clicked.connect(self.stop_timer)
+        self.StopButton.clicked.connect(self.stop_plot)
         self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
         self.SaveButton.clicked.connect(self.save_to_edf)
 
@@ -96,13 +92,12 @@ class Ui_MainWindow(object):
         self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
         self.setup_figure_and_canvas(layout, centralwidget)
         self.setup_button_layout(layout)
-        self.setup_slider_and_listwidget(layout)
 
         return layout
 
     def setup_figure_and_canvas(self, layout, MainWindow):
         if self.raw == None: return
-        self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw)
+        self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw, self.epilepsy_prediction)
 
     def setup_button_layout(self, layout):
         buttonLayout = QtWidgets.QHBoxLayout()
@@ -111,27 +106,8 @@ class Ui_MainWindow(object):
         buttonLayout.addWidget(self.SaveButton)
         layout.addLayout(buttonLayout)
 
-    def setup_slider_and_listwidget(self, layout):
-        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setRange(0, 64)
-        self.slider.setValue(0)
-        self.slider.sliderReleased.connect(self.slider_update_plot)
-        listwidget = self.setup_listwidget()
-        slider_Layout = QtWidgets.QHBoxLayout()
-        slider_Layout.addWidget(self.slider)
-        slider_Layout.addWidget(listwidget)
-        layout.addLayout(slider_Layout)
-
-    def setup_listwidget(self):
-        listwidget = QListWidget()
-        for i, value in enumerate([0, 128, 192, 256, 320, 384, 448, 512, 1024, 2048, 4096]):
-            listwidget.insertItem(i, str(value))
-        listwidget.clicked.connect(self.clicked)
-        return listwidget  
-
-    def epilepsy_prediction(self, data, frequency):
+    def epilepsy_prediction(self, data, frequency, predictProba=False):
         model_predykcja = tf.keras.models.load_model('./Model/model_new.h5')
-
         attack = prepare_dataset_attack_model(data, plot_verbose=False)
         a = np.array(attack)
         a = a[np.newaxis, :4]
@@ -148,14 +124,14 @@ class Ui_MainWindow(object):
         with torch.no_grad():
             loaded_model.eval()
             validation_logits = loaded_model(validation_attributes).squeeze()
-            validation_predictions = torch.round(validation_logits)
+            validation_predictions = validation_logits
+            if not predictProba: validation_predictions = torch.round(validation_logits)
 
+        print("WILL BE ATTACK: ", validation_logits)
         start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=1000)
         if start_sample is None or end_sample is None:
             return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         attr_df = data[start_sample:end_sample]
-
-        visualize_predicted_attack(y[0], validation_predictions)
 
         '''
             Multi channel
@@ -179,7 +155,8 @@ class Ui_MainWindow(object):
             with torch.no_grad():
                 loaded_model.eval()
                 validation_logits = loaded_model(validation_attributes).squeeze()
-                validation_predictions = torch.round(validation_logits)
+                validation_predictions = validation_logits
+                if not predictProba: validation_predictions = torch.round(validation_logits)
 
             final_predictions.append(validation_predictions.numpy())
         return np.array(final_predictions).T
@@ -191,15 +168,14 @@ class Ui_MainWindow(object):
         self.secondWindow.setupUi(self.doctorMenu)
         self.doctorMenu.show()
 
-    def stop_timer(self):
+    def stop_plot(self):
         _translate = QtCore.QCoreApplication.translate
-        if self.timerStatus == False:
-            self.timerStatus = True
-            self.timer.start()
-            self.signalTimer.start()
+        if self.isPlotting == False:
             self.StopButton.setText(_translate("MainWindow", "Stop"))
+            self.isPlotting = True
+            self.timer.start()
         else:
-            self.timerStatus = False
+            self.isPlotting = False
             self.timer.stop()
             self.StopButton.setText(_translate("MainWindow", "Start"))
 
@@ -211,58 +187,9 @@ class Ui_MainWindow(object):
         if file_name:
             self.raw = mne.io.read_raw_edf(file_name, preload=True)
 
-    def signal_update_time(self):
-        self.source_current_start_idx += self.signalFrequency // 16
-        self.source_current_end_idx += self.signalFrequency // 16
-        data_length = 0
-
-        for i, channel in enumerate(self.channels_to_plot):
-            data, times = self.raw[channel, self.source_current_start_idx:self.source_current_end_idx]
-
-            self.data_buffers[channel][0].extend(data[0])
-            self.data_buffers[channel][1].extend(times)
-            
-            data_length = len(self.data_buffers[channel][0])
-
-        self.data_times += self.signalFrequency // 16
-
-        if data_length > 4096 and (self.data_times % 512 == 0):
-            self.data_times = 0
-            values_list = np.array(list(self.data_buffers.values()))
-            self.temp = self.epilepsy_prediction(values_list[:, 0].T, self.signalFrequency)
-            print(self.temp)
-            for channel in self.channels_to_plot:
-                self.data_buffers[channel] = (
-                self.data_buffers[channel][0][-4096:], self.data_buffers[channel][1][-4096:])
-
-        else:
-            self.temp = [0] * len(self.channels_to_plot)
-
     def update_plot(self):
         if self.signalPlot is not None:
             self.signalPlot.update()
-
-    def slider_update_plot(self):
-        """Updates the plot based on the slider's current value."""
-
-        start_idx = self.slider.value()
-        end_idx = min(self.source_initial_range, start_idx + 64)
-
-        for ax in self.axes:
-            ax.cla()
-
-        cmap = plt.get_cmap('tab20')
-        colors = cmap(range(len(self.channels_to_plot)))
-
-        for i, channel in enumerate(self.channels_to_plot):
-            data, times = self.data_buffers[channel]
-            if len(data) > end_idx:
-                self.axes[i].plot(times[start_idx:end_idx], data[start_idx:end_idx], label=channel, color=colors[i])
-                self.axes[i].legend(loc='upper right')
-
-        self.axes[-1].set_xlabel('Time (s)')
-
-        self.canvas.draw_idle()
 
     def clicked(self, qmodelindex):
         self.plot_extension = int(self.listwidget.currentItem().text())
