@@ -1,43 +1,38 @@
 import csv
 from PyQt5 import QtCore, QtWidgets
 from CommonTools.CommonTools import show_popup, QMessageBox
-from DoctorMenu.DoctorMenuList import Ui_MainWindow
 class Ui_LoginWindow(object):
     def setupUi(self, LoginWindow):
         LoginWindow.setObjectName("LoginWindow")
-        LoginWindow.resize(315, 273)
+        LoginWindow.resize(300, 300)
         
         # Central widget
         self.centralwidget = QtWidgets.QWidget(LoginWindow)
         self.centralwidget.setObjectName("centralwidget")
 
         # Layout
-        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(30, 20, 251, 221))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setObjectName("verticalLayout")
+        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
+        self.gridLayout.setContentsMargins(25, 25, 25, 25)
+        self.gridLayout.setObjectName("gridLayout")
 
         # Login
-        self.loginTextBox = QtWidgets.QLineEdit(self.verticalLayoutWidget)
+        self.loginTextBox = QtWidgets.QLineEdit(self.centralwidget)
         self.loginTextBox.setObjectName("loginTextBox")
-        self.loginTextBox.setText("Login")
-        self.verticalLayout.addWidget(self.loginTextBox)
+        self.loginTextBox.setPlaceholderText("Login")
+        self.gridLayout.addWidget(self.loginTextBox, 0, 0, 1, 1)
 
         # Password
-        self.passwordTextBox = QtWidgets.QLineEdit(self.verticalLayoutWidget)
+        self.passwordTextBox = QtWidgets.QLineEdit(self.centralwidget)
         self.passwordTextBox.setPlaceholderText("Hasło")
         self.passwordTextBox.setObjectName("passwordTextBox")
         self.passwordTextBox.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.verticalLayout.addWidget(self.passwordTextBox)
+        self.gridLayout.addWidget(self.passwordTextBox, 1, 0, 1, 1)
 
         # Login button
-        self.LoginButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.LoginButton = QtWidgets.QPushButton(self.centralwidget)
         self.LoginButton.setObjectName("LoginButton")
         self.LoginButton.setText("Login")
-        self.verticalLayout.addWidget(self.LoginButton)
+        self.gridLayout.addWidget(self.LoginButton, 2, 0, 1, 1)
 
         # Status bar
         self.statusbar = QtWidgets.QStatusBar(LoginWindow)
@@ -73,16 +68,18 @@ class Ui_LoginWindow(object):
             return False
 
         if not isValidLogin(login, password):
-            show_popup("Błąd", "Nieprawidłowe hasło!", QMessageBox.Warning)
+            show_popup("Błąd", "Nieprawidłowe Hasło lub Login!", QMessageBox.Warning)
         else:
             self.MenuList()
 
     def MenuList(self):
+        from DoctorMenu.DoctorMenuList import Ui_MainWindow
+
+        QtWidgets.qApp.closeAllWindows()
         self.doctor_menu_list = QtWidgets.QMainWindow()
         self.second_ui = Ui_MainWindow()
         self.second_ui.setupUi(self.doctor_menu_list)
         self.doctor_menu_list.show()
-        LoginWindow.close()
 
 
 if __name__ == "__main__":
