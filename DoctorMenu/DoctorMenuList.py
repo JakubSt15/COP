@@ -7,6 +7,7 @@ from AddUser import AddUser
 from ShowEDF import ShowEDFWindow
 from ModelRun import ModelView
 from UserListWindow import UserListWindow
+import LoginWindow
 
 
 # This class definition creates the user interface for the main window
@@ -57,6 +58,12 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.RunModel, 3, 0, 1, 1)  # Add to grid layout
         self.RunModel.clicked.connect(self.onShowRunModelCliced)
 
+        self.Logout = QtWidgets.QPushButton(self.centralwidget)
+        self.Logout.setObjectName("Logout")
+        self.Logout.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.gridLayout.addWidget(self.Logout, 4, 0, 1, 1)
+        self.Logout.clicked.connect(self.onLogoutCliced)
+
         # Set the central widget of the main window
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -81,6 +88,7 @@ class Ui_MainWindow(object):
         self.RunModel.setText(_translate("Doctor Menu List", "Run Model"))
         self.AddNewUser.setText(_translate("Doctor Menu List", "Add New User"))
         self.ShowEDFFile.setText(_translate("Doctor Menu List", "Show EDF File"))
+        self.Logout.setText(_translate("Doctor Menu List", "Logout"))
 
     def onAddUserCliced(self):
         try:
@@ -112,7 +120,13 @@ class Ui_MainWindow(object):
         self.secondWindow.setupUi(self.runModel)
         self.runModel.show()
 
+    def onLogoutCliced(self):
 
+        QtWidgets.qApp.closeAllWindows()
+        self.logoutWindow = QtWidgets.QMainWindow()
+        self.secondWindow = LoginWindow.Ui_LoginWindow()
+        self.secondWindow.setupUi(self.logoutWindow)
+        self.logoutWindow.show()
 
 if __name__ == "__main__":
     import sys
