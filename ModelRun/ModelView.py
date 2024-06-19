@@ -128,7 +128,8 @@ class Ui_MainWindow(object):
             if not predictProba: validation_predictions = torch.round(validation_logits)
 
         print("WILL BE ATTACK: ", validation_logits)
-        start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=1000)
+        start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=100)
+        
         if start_sample is None or end_sample is None:
             return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         attr_df = data[start_sample:end_sample]
@@ -159,6 +160,7 @@ class Ui_MainWindow(object):
                 if not predictProba: validation_predictions = torch.round(validation_logits)
 
             final_predictions.append(validation_predictions.numpy())
+            
         return np.array(final_predictions).T
 
     def close_window(self):

@@ -4,6 +4,7 @@ from pyqtgraph import PlotWidget, plot
 from collections import deque
 from queue import Queue
 import numpy as np
+import threading
 
 class SignalPlot():
     def __init__(self, layout, channels_to_plot, data, predictorFunction):
@@ -12,6 +13,7 @@ class SignalPlot():
         self.channels = channels_to_plot
         self.numberOfChannels = len(self.channels)
         self.colorList = ['#31f766', '#008a25']
+        self.cmap = pg.colormap.get('CET-L17')
         self.maxLen = 5
 
         ''' signalPlotData - przefiltrowane kanały'''
@@ -88,7 +90,10 @@ class SignalPlot():
             
             values_list = np.array(list(self.data_buffers.values()))
             prediction = self.predict(values_list.T, predictProba=self.modelPredictsProbability)
-            print(prediction)
+        
+            ''' out of (n, 19) calculates (1, 19) vector with mean probability for attack for whole second'''
+            attackMeanProba = np.mean(prediction, axis=0)
+            self.updatePlotColors(attackMeanProba)
 
         self.currentSample += 1
         current_time = self.timeDeq[-1]
@@ -98,3 +103,25 @@ class SignalPlot():
 
     def predict(self, data, predictProba=False):
         return self.predictAttack(data, 512, predictProba=predictProba)
+    
+    ''' predictions is a (n, 19) element vector of prorbabilites for attack on each channel'''
+    def updatePlotColors(self, predictions):
+        for i in range(self.numberOfChannels):
+                color = self._getColorBasedOnPrediction(predictions[i], i)
+                self.curveHandlers[i].setPen(pg.mkPen(color))
+
+    def _getColorBasedOnPrediction(self, prediction, id):
+        if prediction > 0.9:
+            return '#fc0303'
+        elif prediction > 0.8:
+            return '#fc3503'
+        elif prediction > 0.7:
+            return '#fc6b03'
+        elif prediction > 0.6:
+            return '#fcb503'
+        elif prediction > 0.5:
+            return '#fcf403'
+        elif prediction > 0.25:
+            return '#bafc03'
+        else:
+            return self.colorList[id % len(self.colorList)]

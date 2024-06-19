@@ -103,7 +103,6 @@ def process_attribute_channels(df, plot_verbose=False, rollingN=1500):
     PROCESSED_CHANNELS = []
     for id, column in enumerate(df.T):
         if plot_verbose: plot_signal(column, title=f"Raw signal");
-
         # Filtrowanie atrybutów
         column = filtfilt(*butter(5, [3, 13], btype='band', fs=512), column)
         if plot_verbose: plot_signal(column, title=f"Butter filtered signal [3 13]");
@@ -168,8 +167,6 @@ def get_one_channel_train_data(attr_df, labels_df, column_to_predict):
     return attr, labels
 
 def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
-    print('Preparing multi channel dataset...')
-    
     all_df = []
     if isinstance(data_csv, pd.DataFrame):
         signal_csv, labels_csv = data_csv[0], data_csv[1]
@@ -189,9 +186,7 @@ def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
 
     for i in range(COLUMNS):
         attributes, labels = [], []
-        print(f'Current column: {i}')
         for id, df in enumerate(all_df):
-            print(f'\tCurrent file: {id}')
             attr_df = df[0]
             labels_df = df[1]
             attributes_raw, labels_raw = get_one_channel_train_data(attr_df, labels_df, i)
@@ -223,7 +218,6 @@ def prepare_datasets_channel_attacks(data_csv, plot_verbose=False, fast=False):
 
 
 def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast=False, rollingN=1500):
-    print('Preparing multi channel dataset...')
     
     all_df = []
     attr_df = data_csv
@@ -234,13 +228,11 @@ def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast
 
     for i in range(COLUMNS):
         attributes = []
-        print(f'Current column: {i}')
         for id, df in enumerate(all_df):
-            print(f'\tCurrent file: {id}')
             attr_df = df
 
             attributes_raw, _ = get_one_channel_train_data(attr_df, None, i)
-            _attr = attr_df
+            _attr = attributes_raw
 
             if not fast:
                 PROCESSED_CHANNELS = process_attribute_channels(attributes_raw, plot_verbose=plot_verbose, rollingN=rollingN)
@@ -255,7 +247,6 @@ def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast
             'column': i
             })
 
-        
     return channel_datasets
 
 
@@ -274,5 +265,6 @@ def get_attack_sample_from_predictions(predictions, FRAME_SIZE=1000):
             end_sample = id * FRAME_SIZE
             break
     
+    if end_sample is None: end_sample = len(predictions) * FRAME_SIZE
     return start_sample, end_sample
 
