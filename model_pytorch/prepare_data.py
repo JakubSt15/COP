@@ -8,7 +8,7 @@ from sklearn.preprocessing import MinMaxScaler
 from scipy.interpolate import interp1d
 
 
-FRAME_SIZE = 1000
+FRAME_SIZE = 100
 plt.style.use("Solarize_Light2")
 def plot_signal(signal, title=None):
     plt.plot(signal)

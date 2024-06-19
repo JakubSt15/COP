@@ -21,7 +21,7 @@ class PreparingDatasets:
         f'{fy}4_training_record.csv'
         ]
         self.frequency = 512
-        self.frame_size = 1000
+        self.frame_size = 100
         self.normalization = Normalization()
         self.filter=Filter()
 
