@@ -49,11 +49,11 @@ class Ui_MainWindow(object):
         self.start_time = 0
         self.plot_extension = 0
         self.data_times = 32
-        self.channels_to_plot = ['EEG Fp1', 'EEG F3', 'EEG C3',
-                            'EEG P3', 'EEG O1', 'EEG F7', 'EEG T3',
-                            'EEG T5', 'EEG Fz', 'EEG Cz', 'EEG Pz',
-                            'EEG Fp2', 'EEG F4', 'EEG C4', 'EEG P4',
-                            'EEG O2', 'EEG F8', 'EEG T4', 'EEG T6']
+        self.channels_to_plot = ['eeg fp1', 'eeg f3', 'eeg c3',
+                                 'eeg p3', 'eeg o1', 'eeg f7', 'eeg t3',
+                                 'eeg t5', 'eeg fz', 'eeg cz', 'eeg pz',
+                                 'eeg fp2', 'eeg f4', 'eeg c4', 'eeg p4',
+                                 'eeg o2', 'eeg f8', 'eeg t4', 'eeg t6']
         self.temp = [0] * len(self.channels_to_plot)
         self.source_initial_range = 100
         self.source_current_start_idx = 0

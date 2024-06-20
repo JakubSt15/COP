@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import csv
 from DoctorMenu import DoctorMenuList
+from UserListWindow import UserListWindow
 
 # Form implementation generated from reading ui file '.\AddUser.ui'
 #
@@ -177,10 +178,10 @@ class Ui_AddUser(object):
     def onCloseClicked(self):
         try:
             QtWidgets.qApp.closeAllWindows()
-            self.doctorMenuList = QtWidgets.QMainWindow()
-            self.secondWindow = DoctorMenuList.Ui_MainWindow()
-            self.secondWindow.setupUi(self.doctorMenuList)
-            self.doctorMenuList.show()
+            self.userListWindow = QtWidgets.QMainWindow()
+            self.secondWindow = UserListWindow.Ui_UserListWindow()
+            self.secondWindow.setupUi(self.userListWindow)
+            self.userListWindow.show()
         except Exception as e:
             print(e)
 

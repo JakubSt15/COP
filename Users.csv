@@ -1,11 +1,5 @@
 id;name;surname;role;login;haslo
 1;Jan;Kowalski;2;user;user
 2;Giga;Chad;3;admin;admin
-3;qwe;ewq;1;eqw;eqw
-4;weqewq;eqwweq;1;eqweqw;weqweq
-5;;;1;;
-6;;;1;login;
-7;;;1;Login;
-8;qwe;eqw;1;weq;qweeqwwqqwe
-9;weq;eqw;1;eqw;qwe
-10;wda;dwa;1;adw;adw
+3;;;1;;
+4;test;test;1;test;test
