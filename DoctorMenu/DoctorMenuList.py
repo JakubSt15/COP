@@ -3,7 +3,6 @@
 # This line imports necessary modules from PyQt5 library
 from PyQt5 import QtCore, QtWidgets
 
-from AddUser import AddUser
 from ShowEDF import ShowEDFWindow
 from ModelRun import ModelView
 from UserListWindow import UserListWindow
@@ -33,35 +32,28 @@ class Ui_MainWindow(object):
         self.gridLayout.setContentsMargins(25, 25, 25, 25)
         self.gridLayout.setObjectName("gridLayout")
 
-        # Create and add buttons with appropriate size policy
-        self.AddNewUser = QtWidgets.QPushButton(self.centralwidget)
-        self.AddNewUser.setObjectName("AddNewUser")
-        self.AddNewUser.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.AddNewUser, 0, 0, 1, 1)  # Add to grid layout
-        self.AddNewUser.clicked.connect(self.onAddUserCliced)
-
         self.ShowEDFFile = QtWidgets.QPushButton(self.centralwidget)
         self.ShowEDFFile.setObjectName("ShowEDFFile")
         self.ShowEDFFile.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.ShowEDFFile, 2, 0, 1, 1)  # Add to grid layout
+        self.gridLayout.addWidget(self.ShowEDFFile, 1, 0, 1, 1)  # Add to grid layout
         self.ShowEDFFile.clicked.connect(self.onShowEDFCliced)
 
         self.UsersList = QtWidgets.QPushButton(self.centralwidget)
         self.UsersList.setObjectName("UsersList")
         self.UsersList.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.UsersList, 1, 0, 1, 1)  # Add to grid layout
+        self.gridLayout.addWidget(self.UsersList, 0, 0, 1, 1)  # Add to grid layout
         self.UsersList.clicked.connect(self.onShowUserList)
 
         self.RunModel = QtWidgets.QPushButton(self.centralwidget)
         self.RunModel.setObjectName("RunModel")
         self.RunModel.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.RunModel, 3, 0, 1, 1)  # Add to grid layout
+        self.gridLayout.addWidget(self.RunModel, 2, 0, 1, 1)  # Add to grid layout
         self.RunModel.clicked.connect(self.onShowRunModelCliced)
 
         self.Logout = QtWidgets.QPushButton(self.centralwidget)
         self.Logout.setObjectName("Logout")
         self.Logout.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.Logout, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.Logout, 3, 0, 1, 1)
         self.Logout.clicked.connect(self.onLogoutCliced)
 
         # Set the central widget of the main window
@@ -86,18 +78,8 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("Doctor Menu List", "Doctor Menu List"))
         self.UsersList.setText(_translate("Doctor Menu List", "See Users List"))
         self.RunModel.setText(_translate("Doctor Menu List", "Run Model"))
-        self.AddNewUser.setText(_translate("Doctor Menu List", "Add New User"))
         self.ShowEDFFile.setText(_translate("Doctor Menu List", "Show EDF File"))
         self.Logout.setText(_translate("Doctor Menu List", "Logout"))
-
-    def onAddUserCliced(self):
-        try:
-            QtWidgets.qApp.closeAllWindows()
-            self.addUser = QtWidgets.QMainWindow()
-            self.secondWindow = AddUser.Ui_AddUser()
-            self.secondWindow.setupUi(self.addUser)
-            self.addUser.show()
-        except Exception as e: print(e)
 
     def onShowUserList(self):
         QtWidgets.qApp.closeAllWindows()
