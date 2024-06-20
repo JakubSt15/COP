@@ -43,7 +43,7 @@ class Ui_MainWindow(object):
 
     def setup_initial_values(self):
         mne.set_log_level('CRITICAL')
-        self.isPlotting = False
+        self.followPlot = False
         self.signalFrequency = 512
         self.elapsed_time = 0
         self.start_time = 0
@@ -91,25 +91,43 @@ class Ui_MainWindow(object):
 
     def setup_layout(self, centralwidget):
         layout = QtWidgets.QVBoxLayout(centralwidget)
-        self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
-        self.setup_figure_and_canvas(layout, centralwidget)
-        self.setup_button_layout(layout)
 
+        ''' Fixed values of layout - in px '''
+        width = 1720        
+        height = 920 
+        signalPlotSize = (width, 620)
+        buttonSize = (140, 20)
+        buttonLayoutSize = (buttonSize[0]*3+15, buttonSize[1]*3+15)
+        centralwidget.setFixedSize(width, height)
+    
+        self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
+        self.setup_figure_and_canvas(layout, signalPlotSize)
+        self.setup_button_layout(layout, buttonLayoutSize, buttonSize)
+        
         return layout
 
-    def setup_figure_and_canvas(self, layout, MainWindow):
+    def setup_figure_and_canvas(self, layout, signalPlotSize):
         if self.raw == None: return
         self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw, self.epilepsy_prediction)
+        self.signalPlot.plotWidget.setFixedSize(signalPlotSize[0], signalPlotSize[1])
 
-    def setup_button_layout(self, layout):
-        buttonLayout = QtWidgets.QHBoxLayout()
+    def setup_button_layout(self, layout, buttonLayoutSize, buttonSize):
+        buttonBox = QtWidgets.QGroupBox()
+        buttonLayout = QtWidgets.QHBoxLayout(buttonBox)
+        self.StopButton = QtWidgets.QPushButton("Stop")
+        self.CloseButton = QtWidgets.QPushButton("Close")
+        self.SaveButton = QtWidgets.QPushButton("Save")
+        self.StopButton.setFixedSize(buttonSize[0], buttonSize[1])
+        self.CloseButton.setFixedSize(buttonSize[0], buttonSize[1])
+        self.SaveButton.setFixedSize(buttonSize[0], buttonSize[1])
         buttonLayout.addWidget(self.StopButton)
         buttonLayout.addWidget(self.CloseButton)
         buttonLayout.addWidget(self.SaveButton)
-        layout.addLayout(buttonLayout)
+        buttonBox.setFixedSize(buttonLayoutSize[0], buttonLayoutSize[1])
+        layout.addWidget(buttonBox)
 
     def epilepsy_prediction(self, data, frequency, predictProba=False):
-        model_predykcja = tf.keras.models.load_model('./Model/model_new.h5')
+        model_predykcja = tf.keras.models.load_model('./Model/model.keras')
         attack = prepare_dataset_attack_model(data, plot_verbose=False)
         a = np.array(attack)
         a = a[np.newaxis, :4]
@@ -130,7 +148,6 @@ class Ui_MainWindow(object):
             validation_predictions = validation_logits
             if not predictProba: validation_predictions = torch.round(validation_logits)
 
-        print("WILL BE ATTACK: ", validation_logits)
         start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=100)
         
         if start_sample is None or end_sample is None:
@@ -175,13 +192,12 @@ class Ui_MainWindow(object):
 
     def stop_plot(self):
         _translate = QtCore.QCoreApplication.translate
-        if self.isPlotting == False:
+        if self.followPlot == False:
             self.StopButton.setText(_translate("MainWindow", "Stop"))
-            self.isPlotting = True
+            self.followPlot = True
             self.timer.start()
         else:
-            self.isPlotting = False
-            self.timer.stop()
+            self.followPlot = False
             self.StopButton.setText(_translate("MainWindow", "Start"))
 
     def load_file(self):
@@ -193,8 +209,7 @@ class Ui_MainWindow(object):
             self.raw = mne.io.read_raw_edf(file_name, preload=True)
 
     def update_plot(self):
-        if self.signalPlot is not None:
-            self.signalPlot.update()
+        self.signalPlot.update(followPlot=self.followPlot)
 
     def clicked(self, qmodelindex):
         self.plot_extension = int(self.listwidget.currentItem().text())

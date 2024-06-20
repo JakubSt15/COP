@@ -52,15 +52,21 @@ class SignalPlot():
         self.plotHandler.showGrid(x=True, y=True)
         self.plotHandler.setLabel('bottom', 'Time (s)')
 
-        for i in range(self.numberOfChannels):
+        labelsGap = 0.045
+        labelsXstart = 0.92
+        labelsYstart = 0.04
+        for i, channel in enumerate(self.channels):
             color = self.colorList[i % len(self.colorList)]
             curve = self.plotHandler.plot(pen=pg.mkPen(color))
             self.curveHandlers.append(curve)
-    
+            
+            label = pg.LabelItem(channel)
+            label.setParentItem(self.plotHandler)
+            label.anchor(itemPos=(0.0, 0.0), parentPos=(labelsXstart, labelsYstart + i*labelsGap))
         self.plotHandler.setMouseEnabled(y=False)
 
 
-    def update(self):
+    def update(self, followPlot=True):
         ''' signal - Y axis, time - X axis'''
         _new_data = self.signalPlotData['EEG Fp1']
         _timeY = _new_data[1]
@@ -97,7 +103,7 @@ class SignalPlot():
 
         self.currentSample += 1
         current_time = self.timeDeq[-1]
-        if current_time > self.maxLen:
+        if current_time > self.maxLen and followPlot:
             self.plotHandler.setXRange(current_time - self.maxLen, current_time, padding=0.1)
 
 
