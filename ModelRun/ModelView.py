@@ -4,7 +4,8 @@ from scipy.signal import savgol_filter, butter, filtfilt, decimate
 import torch
 from sklearn.metrics import accuracy_score
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QListWidget
+from PyQt5.QtWidgets import QListWidget, QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QApplication
+from PyQt5.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
 import matplotlib.pyplot as plt
 import mne
@@ -17,6 +18,8 @@ from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_f
 from Model.train_attack import AttackModel, MultiChannelAttackModel
 from Model.visualize import visualize_predicted_attack
 from ModelRun.Graph import SignalPlot
+from ModelRun.Table import GuiAttackTable
+from ModelRun.PredictionPlots import PredictionPlots
 
 import pyqtgraph as pg
 import logging
@@ -30,6 +33,7 @@ tf.get_logger().setLevel('FATAL')
 
 class Ui_MainWindow(object):
     def __init__(self, MainWindow):
+        self.table = None
         self.signalPlot = None
         self.raw = None
         self.setup_initial_values()
@@ -95,36 +99,83 @@ class Ui_MainWindow(object):
         ''' Fixed values of layout - in px '''
         width = 1720        
         height = 920 
-        signalPlotSize = (width, 620)
-        buttonSize = (140, 20)
-        buttonLayoutSize = (buttonSize[0]*3+15, buttonSize[1]*3+15)
-        centralwidget.setFixedSize(width, height)
+        signalPlotHeight = 620
+        buttonSize = (100, 20)
+        centralwidget.setFixedHeight(height)
     
         self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
-        self.setup_figure_and_canvas(layout, signalPlotSize)
-        self.setup_button_layout(layout, buttonLayoutSize, buttonSize)
-        
+        self.setup_figure_and_canvas(layout, signalPlotHeight)
+
+        bottomContainer = QtWidgets.QHBoxLayout()
+        bottomRightContainer = QtWidgets.QVBoxLayout()
+        bottomLeftContainer = QtWidgets.QVBoxLayout()
+
+
+        self.setup_button_layout(bottomLeftContainer, buttonSize)
+        self.setup_table(bottomRightContainer)
+        self.setup_color_legend(bottomRightContainer)
+        self.setup_prediction_plots(bottomLeftContainer)
+
+        bottomContainer.addLayout(bottomLeftContainer)
+        spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        bottomContainer.addItem(spacer)
+        bottomContainer.addLayout(bottomRightContainer)
+        layout.addLayout(bottomContainer)
         return layout
 
-    def setup_figure_and_canvas(self, layout, signalPlotSize):
+    def setup_figure_and_canvas(self, layout, signalPlotHeight):
         if self.raw == None: return
         self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw, self.epilepsy_prediction)
-        self.signalPlot.plotWidget.setFixedSize(signalPlotSize[0], signalPlotSize[1])
+        self.signalPlot.plotWidget.setFixedHeight(signalPlotHeight)
 
-    def setup_button_layout(self, layout, buttonLayoutSize, buttonSize):
+    def setup_button_layout(self, layout, buttonSize):
         buttonBox = QtWidgets.QGroupBox()
         buttonLayout = QtWidgets.QHBoxLayout(buttonBox)
-        self.StopButton = QtWidgets.QPushButton("Stop")
-        self.CloseButton = QtWidgets.QPushButton("Close")
-        self.SaveButton = QtWidgets.QPushButton("Save")
         self.StopButton.setFixedSize(buttonSize[0], buttonSize[1])
         self.CloseButton.setFixedSize(buttonSize[0], buttonSize[1])
         self.SaveButton.setFixedSize(buttonSize[0], buttonSize[1])
         buttonLayout.addWidget(self.StopButton)
         buttonLayout.addWidget(self.CloseButton)
         buttonLayout.addWidget(self.SaveButton)
-        buttonBox.setFixedSize(buttonLayoutSize[0], buttonLayoutSize[1])
         layout.addWidget(buttonBox)
+
+    def setup_table(self, layout):
+        self.table = GuiAttackTable(layout, self.channels_to_plot)
+
+    def setup_color_legend(self, layout):
+        legend_layout = QtWidgets.QHBoxLayout()
+
+        # Define the legend colors and corresponding labels
+        legend_data = [
+            (0.9, '#fc0303', 'High Risk >90%'),
+            (0.8, '#fc3503', 'Medium High Risk >80%'),
+            (0.7, '#fc6b03', 'Medium Risk >70%'),
+            (0.6, '#fcb503', 'Medium Low Risk >60%'),
+            (0.5, '#fcf403', 'Low Risk >50%'),
+            (0.25, '#bafc03', 'Very Low Risk >25%')
+        ]
+
+        for threshold, color, label_text in legend_data:
+            color_widget = QtWidgets.QWidget()
+            color_widget.setFixedSize(20, 20)  # Size of the colored rectangle
+            color_widget.setStyleSheet(f'background-color: {color}; border: 1px solid black;')
+
+            label = QtWidgets.QLabel(label_text)
+            label.setStyleSheet('font-weight: bold;')
+
+            # Create a vertical layout for each legend item
+            item_layout = QtWidgets.QVBoxLayout()
+            item_layout.addWidget(color_widget, alignment=QtCore.Qt.AlignCenter)
+            item_layout.addWidget(label, alignment=QtCore.Qt.AlignCenter)
+
+            legend_layout.addLayout(item_layout)
+
+        layout.addLayout(legend_layout)
+
+    def setup_prediction_plots(self, layout):
+        doublePlotContainer = QtWidgets.QHBoxLayout()
+        self.predictionTables = PredictionPlots(doublePlotContainer)
+        layout.addLayout(doublePlotContainer)
 
     def epilepsy_prediction(self, data, frequency, predictProba=False):
         model_predykcja = tf.keras.models.load_model('./Model/model.keras')
@@ -209,8 +260,10 @@ class Ui_MainWindow(object):
             self.raw = mne.io.read_raw_edf(file_name, preload=True)
 
     def update_plot(self):
-        self.signalPlot.update(followPlot=self.followPlot)
-
+        updated_attack_proba = self.signalPlot.update(followPlot=self.followPlot)
+        if updated_attack_proba is not None:
+            self.table.updateTable(updated_attack_proba)
+            self.predictionTables.upgradePredictionPlot([1,2,1,3])
     def clicked(self, qmodelindex):
         self.plot_extension = int(self.listwidget.currentItem().text())
 

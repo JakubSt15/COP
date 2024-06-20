@@ -1,6 +1,4 @@
-from PyQt5 import QtWidgets, QtCore
 import pyqtgraph as pg
-from pyqtgraph import PlotWidget, plot
 from collections import deque
 from queue import Queue
 import numpy as np
@@ -39,6 +37,8 @@ class SignalPlot():
         self.modelPredictsProbability = True
         self.data_buffers = {channel: [] for channel in self.channels}
 
+        ''' table helper data structure '''
+        self.table_data_buffers = [{'channelName': channel, 'attackProbability': 0} for channel in self.channels]
 
     ''' Gets from EDF only these channels that we need '''
     def filter_channels(self, data, channels):
@@ -72,6 +72,7 @@ class SignalPlot():
         _timeY = _new_data[1]
         plotSamplNumber = self.currentSample * self.plottedDecimation
         currentRecordTime = _timeY[plotSamplNumber]
+        attackMeanProba = None
         self.timeDeq.append(currentRecordTime)
 
         ''' Update plots '''
@@ -100,12 +101,13 @@ class SignalPlot():
             ''' out of (n, 19) calculates (1, 19) vector with mean probability for attack for whole second'''
             attackMeanProba = np.mean(prediction, axis=0)
             self.updatePlotColors(attackMeanProba)
-
+            
         self.currentSample += 1
         current_time = self.timeDeq[-1]
         if current_time > self.maxLen and followPlot:
             self.plotHandler.setXRange(current_time - self.maxLen, current_time, padding=0.1)
 
+        return attackMeanProba
 
     def predict(self, data, predictProba=False):
         return self.predictAttack(data, 512, predictProba=predictProba)
