@@ -109,7 +109,7 @@ class Ui_MainWindow(object):
         layout.addLayout(buttonLayout)
 
     def epilepsy_prediction(self, data, frequency, predictProba=False):
-        model_predykcja = tf.keras.models.load_model('./Model/model_new.h5')
+        model_predykcja = tf.keras.models.load_model('./Model/model.keras')
         attack = prepare_dataset_attack_model(data, plot_verbose=False)
         a = np.array(attack)
         a = a[np.newaxis, :4]
