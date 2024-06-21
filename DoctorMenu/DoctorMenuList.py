@@ -63,9 +63,52 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-
+        self.setStyles()
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def setStyles(self):
+        # Set button style
+        button_style = """
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+        """
+        button_style_reversed = """
+            QPushButton {
+                background-color: #AF4CAB;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #AF4CAB;
+            }
+        """
+        self.ShowEDFFile.setStyleSheet(button_style)
+        self.UsersList.setStyleSheet(button_style)
+        self.RunModel.setStyleSheet(button_style)
+        self.Logout.setStyleSheet(button_style_reversed)
 
     def retranslateUi(self, MainWindow):
         """

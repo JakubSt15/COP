@@ -66,6 +66,7 @@ class Ui_MainWindow(object):
         layout = self.setup_layout(centralwidget)
         self.load_file()
         self.retranslateUi(MainWindow)
+        self.apply_styles()
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def setup_main_window(self, MainWindow):
@@ -172,6 +173,47 @@ class Ui_MainWindow(object):
         self.secondWindow = DoctorMenuList.Ui_MainWindow()
         self.secondWindow.setupUi(self.doctorMenu)
         self.doctorMenu.show()
+
+    def apply_styles(self):
+        button_style = """
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+        """
+        button_style_reversed = """
+            QPushButton {
+                background-color: #AF4CAB;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #AF4CAB;
+            }
+        """
+        self.CloseButton.setStyleSheet(button_style_reversed)
+        self.StopButton.setStyleSheet(button_style)
+        self.SaveButton.setStyleSheet(button_style)
 
     def stop_plot(self):
         _translate = QtCore.QCoreApplication.translate

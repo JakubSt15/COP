@@ -96,6 +96,73 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
         self.splitter.setSizes([UserListWindow.width() // 4, UserListWindow.width() * 3 // 4])
         self.splitter.splitterMoved.connect(self.adjust_splitter)
 
+        self.apply_styles()
+
+
+    def apply_styles(self):
+        button_style = """
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+        """
+        button_style_reversed = """
+            QPushButton {
+                background-color: #AF4CAB;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #AF4CAB;
+            }
+        """
+        self.CloseButton.setStyleSheet(button_style_reversed)
+        self.RemoveButton.setStyleSheet(button_style)
+        self.AddUserButton.setStyleSheet(button_style)
+
+        label_style = """
+            font-size: 14px;
+        """
+        self.idLabel.setStyleSheet(label_style)
+        self.nameLabel.setStyleSheet(label_style)
+        self.surnameLabel.setStyleSheet(label_style)
+        self.roleLabel.setStyleSheet(label_style)
+        self.loginLabel.setStyleSheet(label_style)
+
+        list_view_style = """
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            padding: 5px;
+        """
+        self.userListView.setStyleSheet(list_view_style)
+
+        splitter_handle_style = """
+            QSplitter::handle {
+                background-color: #bdc3c7;
+            }
+        """
+        self.splitter.setStyleSheet(splitter_handle_style)
+
     def adjust_splitter(self, pos, index):
         if index == 1:
             max_width = self.splitter.width() // 4
