@@ -369,6 +369,9 @@ class Ui_MainWindow(object):
             self.table.updateTable(updated_attack_proba)
             self.predictionsBuffer.append(updated_attack_proba)
             self.predictionTables.upgradePredictionPlot()
+            pup_up_condition = any(element*100>self.threesholds['warning'] for element in updated_attack_proba)
+            if pup_up_condition and self.threesholds['warning'] != True:
+                show_popup("Warning", f"High risk of epilepsy attack detected!", QtWidgets.QMessageBox.Warning)
 
     def clicked(self, qmodelindex):
         self.plot_extension = int(self.listwidget.currentItem().text())
