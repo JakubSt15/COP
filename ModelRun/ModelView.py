@@ -1,28 +1,24 @@
 import os
 import numpy as np
-from scipy.signal import savgol_filter, butter, filtfilt, decimate
 import torch
-from sklearn.metrics import accuracy_score
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QListWidget, QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QApplication
 from PyQt5.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
 import matplotlib.pyplot as plt
 import mne
-from mne import create_info
 from CommonTools.CommonTools import show_popup
 from PyQt5.QtWidgets import QFileDialog
 from DoctorMenu import DoctorMenuList
 from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_from_predictions, \
     prepare_prediction_multi_channel_datasets
 from Model.train_attack import AttackModel, MultiChannelAttackModel
-from Model.visualize import visualize_predicted_attack
 from ModelRun.Graph import SignalPlot
 from ModelRun.Table import GuiAttackTable
 from ModelRun.PredictionPlots import PredictionPlots
-
-import pyqtgraph as pg
+import csv
 import logging
+from datetime import datetime
 
 plt.style.use('dark_background')
 
@@ -35,6 +31,7 @@ class Ui_MainWindow(object):
     def __init__(self, MainWindow):
         self.table = None
         self.signalPlot = None
+        self.predictionTables = None
         self.raw = None
         self.setup_initial_values()
         self.setupUi(MainWindow)
@@ -44,6 +41,12 @@ class Ui_MainWindow(object):
         self.timer.setInterval(50)  # Update interval in milliseconds
         self.timer.timeout.connect(self.update_plot)
         self.timer.stop()
+
+        ''' CSV save data (exact time of start, end record, prediction buffer )'''
+        self.timeInitialized = False
+        self.startTime = None
+        self.endTime = None
+        self.predictionsBuffer = []
 
     def setup_initial_values(self):
         mne.set_log_level('CRITICAL')
@@ -92,6 +95,8 @@ class Ui_MainWindow(object):
         self.StopButton.clicked.connect(self.stop_plot)
         self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
         self.SaveButton.clicked.connect(self.save_to_edf)
+        self.SaveCSVButton = QtWidgets.QPushButton("Save attack info CSV", centralwidget)
+        self.SaveCSVButton.clicked.connect(self.save_csv)
 
     def setup_layout(self, centralwidget):
         layout = QtWidgets.QVBoxLayout(centralwidget)
@@ -100,7 +105,7 @@ class Ui_MainWindow(object):
         width = 1720        
         height = 920 
         signalPlotHeight = 620
-        buttonSize = (100, 20)
+        buttonSize = (160, 20)
         centralwidget.setFixedHeight(height)
     
         self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
@@ -134,9 +139,11 @@ class Ui_MainWindow(object):
         self.StopButton.setFixedSize(buttonSize[0], buttonSize[1])
         self.CloseButton.setFixedSize(buttonSize[0], buttonSize[1])
         self.SaveButton.setFixedSize(buttonSize[0], buttonSize[1])
+        self.SaveCSVButton.setFixedSize(buttonSize[0], buttonSize[1])
         buttonLayout.addWidget(self.StopButton)
         buttonLayout.addWidget(self.CloseButton)
         buttonLayout.addWidget(self.SaveButton)
+        buttonLayout.addWidget(self.SaveCSVButton)
         layout.addWidget(buttonBox)
 
     def setup_table(self, layout):
@@ -184,7 +191,12 @@ class Ui_MainWindow(object):
         a = a[np.newaxis, :4]
         logging.getLogger("absl").setLevel(logging.ERROR)
         y = model_predykcja.predict(a, verbose=0)
-
+        
+        ''' append to Gui prediction plots buffers'''
+        channelToDisplay = 0
+        self.predictionTables.pushNewRealData(a[:, :, channelToDisplay].flatten())
+        self.predictionTables.pushNewPrediction(y[:, :, channelToDisplay].flatten())
+        
         attac_model_save_path = './Model/attack_model_pyTorch.pth'
 
         loaded_model = AttackModel()
@@ -202,7 +214,10 @@ class Ui_MainWindow(object):
         start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=100)
         
         if start_sample is None or end_sample is None:
-            return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            ret = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            self.predictionsBuffer.append(ret)
+            return ret
+        
         attr_df = data[start_sample:end_sample]
 
         '''
@@ -231,7 +246,7 @@ class Ui_MainWindow(object):
                 if not predictProba: validation_predictions = torch.round(validation_logits)
 
             final_predictions.append(validation_predictions.numpy())
-            
+        
         return np.array(final_predictions).T
 
     def close_window(self):
@@ -247,6 +262,7 @@ class Ui_MainWindow(object):
             self.StopButton.setText(_translate("MainWindow", "Stop"))
             self.followPlot = True
             self.timer.start()
+            self.setStartRecordTime()
         else:
             self.followPlot = False
             self.StopButton.setText(_translate("MainWindow", "Start"))
@@ -263,7 +279,9 @@ class Ui_MainWindow(object):
         updated_attack_proba = self.signalPlot.update(followPlot=self.followPlot)
         if updated_attack_proba is not None:
             self.table.updateTable(updated_attack_proba)
-            self.predictionTables.upgradePredictionPlot([1,2,1,3])
+            self.predictionsBuffer.append(updated_attack_proba)
+            self.predictionTables.upgradePredictionPlot()
+
     def clicked(self, qmodelindex):
         self.plot_extension = int(self.listwidget.currentItem().text())
 
@@ -297,6 +315,24 @@ class Ui_MainWindow(object):
             mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
             show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
 
+    def save_csv(self):
+        if not self.timeInitialized: return
+        self.setEndRecordTime()
+        columns = self.channels_to_plot
+        with open(f'SavedRecords/{self.startTime}--{self.endTime}.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(columns)
+            writer.writerows(self.predictionsBuffer)
+
+    def setStartRecordTime(self):
+        if self.timeInitialized == True: return
+        self.timeInitialized = True
+        self.startTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
+    def setEndRecordTime(self):
+        if self.timeInitialized == False: return
+        self.endTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        self.timeInitialized = False
 
 if __name__ == "__main__":
     import sys
