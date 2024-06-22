@@ -24,11 +24,12 @@ plt.style.use('dark_background')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import tensorflow as tf
+
 tf.get_logger().setLevel('FATAL')
 
 
 class Ui_MainWindow(object):
-    def __init__(self, MainWindow):
+    def __init__(self, MainWindow, file_name=None):
         self.table = None
         self.signalPlot = None
         self.predictionTables = None
@@ -42,6 +43,14 @@ class Ui_MainWindow(object):
         self.timer.timeout.connect(self.update_plot)
         self.timer.stop()
 
+        self.setup_initial_values()  # Teraz inicjalizacja jest pierwsza
+
+        if file_name is not None:
+            self.load_file(file_name)
+
+        self.isPlotting = False
+        self.setupUi(MainWindow)
+
         ''' CSV save data (exact time of start, end record, prediction buffer )'''
         self.timeInitialized = False
         self.startTime = None
@@ -50,6 +59,7 @@ class Ui_MainWindow(object):
 
     def setup_initial_values(self):
         mne.set_log_level('CRITICAL')
+        self.isPlotting = False
         self.followPlot = False
         self.signalFrequency = 512
         self.elapsed_time = 0
@@ -76,6 +86,23 @@ class Ui_MainWindow(object):
         self.apply_styles()
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+    def setupUi(self, MainWindow):
+        self.setup_main_window(MainWindow)
+        self.centralwidget = self.setup_central_widget(MainWindow)
+        self.setup_buttons(self.centralwidget)  # Najpierw tworzymy przyciski
+        layout = self.setup_layout(self.centralwidget)  # Potem dodajemy je do layoutu
+        self.retranslateUi(MainWindow)
+        self.load_file()
+
+        self.retranslateUi(MainWindow)
+        self.apply_styles()
+
+        if self.raw is not None and self.isPlotting:
+            self.timer.start()
+
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+
     def setup_main_window(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -92,9 +119,15 @@ class Ui_MainWindow(object):
     def setup_buttons(self, centralwidget):
         self.CloseButton = QtWidgets.QPushButton("Close", centralwidget)
         self.CloseButton.clicked.connect(self.close_window)
+
         self.StopButton = QtWidgets.QPushButton("Stop", centralwidget)
         self.StopButton.clicked.connect(self.stop_plot)
+
         self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
+
+
+        self.ChooseButton = QtWidgets.QPushButton("Pick EDF", centralwidget)
+        self.ChooseButton.clicked.connect(self.change_edf)
 
         self.SaveCSVButton = QtWidgets.QPushButton("Save attack info CSV", centralwidget)
         self.SaveCSVButton.clicked.connect(self.save_csv)
@@ -103,19 +136,18 @@ class Ui_MainWindow(object):
         layout = QtWidgets.QVBoxLayout(centralwidget)
 
         ''' Fixed values of layout - in px '''
-        width = 1720        
-        height = 920 
+        width = 1720
+        height = 920
         signalPlotHeight = 620
         buttonSize = (160, 20)
         centralwidget.setFixedHeight(height)
-    
+
         self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
         self.setup_figure_and_canvas(layout, signalPlotHeight)
 
         bottomContainer = QtWidgets.QHBoxLayout()
         bottomRightContainer = QtWidgets.QVBoxLayout()
         bottomLeftContainer = QtWidgets.QVBoxLayout()
-
 
         self.setup_button_layout(bottomLeftContainer, buttonSize)
         self.setup_table(bottomRightContainer)
@@ -132,6 +164,7 @@ class Ui_MainWindow(object):
     def setup_figure_and_canvas(self, layout, signalPlotHeight):
         if self.raw == None: return
         self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw, self.epilepsy_prediction)
+        layout.insertWidget(0, self.signalPlot.plotWidget)
         self.SaveButton.clicked.connect(self.signalPlot.save_to_edf)
 
         self.signalPlot.plotWidget.setFixedHeight(signalPlotHeight)
@@ -146,6 +179,7 @@ class Ui_MainWindow(object):
         buttonLayout.addWidget(self.StopButton)
         buttonLayout.addWidget(self.CloseButton)
         buttonLayout.addWidget(self.SaveButton)
+        buttonLayout.addWidget(self.ChooseButton)
         buttonLayout.addWidget(self.SaveCSVButton)
         layout.addWidget(buttonBox)
 
@@ -194,12 +228,12 @@ class Ui_MainWindow(object):
         a = a[np.newaxis, :4]
         logging.getLogger("absl").setLevel(logging.ERROR)
         y = model_predykcja.predict(a, verbose=0)
-        
+
         ''' append to Gui prediction plots buffers'''
         channelToDisplay = 0
         self.predictionTables.pushNewRealData(a[:, :, channelToDisplay].flatten())
         self.predictionTables.pushNewPrediction(y[:, :, channelToDisplay].flatten())
-        
+
         attac_model_save_path = './Model/attack_model_pyTorch.pth'
 
         loaded_model = AttackModel()
@@ -215,12 +249,12 @@ class Ui_MainWindow(object):
             if not predictProba: validation_predictions = torch.round(validation_logits)
 
         start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=100)
-        
+
         if start_sample is None or end_sample is None:
-            ret = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            ret = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             self.predictionsBuffer.append(ret)
             return ret
-        
+
         attr_df = data[start_sample:end_sample]
 
         '''
@@ -249,12 +283,11 @@ class Ui_MainWindow(object):
                 if not predictProba: validation_predictions = torch.round(validation_logits)
 
             final_predictions.append(validation_predictions.numpy())
-        
+
         return np.array(final_predictions).T
 
     def close_window(self):
         QtWidgets.qApp.closeAllWindows()
-        self.timer.stop()
         self.doctorMenu = QtWidgets.QMainWindow()
         self.secondWindow = DoctorMenuList.Ui_MainWindow()
         self.secondWindow.setupUi(self.doctorMenu)
@@ -298,24 +331,42 @@ class Ui_MainWindow(object):
         self.CloseButton.setStyleSheet(button_style_reversed)
         self.StopButton.setStyleSheet(button_style)
         self.SaveButton.setStyleSheet(button_style)
+        self.ChooseButton.setStyleSheet(button_style)
         self.SaveCSVButton.setStyleSheet(button_style)
 
     def stop_plot(self):
         _translate = QtCore.QCoreApplication.translate
-        if self.followPlot == False:
-            self.StopButton.setText(_translate("MainWindow", "Stop"))
+        if not self.isPlotting:
+            self.isPlotting = True
             self.followPlot = True
             self.timer.start()
             self.setStartRecordTime()
+            self.StopButton.setText(_translate("MainWindow", "Stop"))
         else:
+            self.isPlotting = False
             self.followPlot = False
             self.StopButton.setText(_translate("MainWindow", "Start"))
 
-    def load_file(self):
-        options = QtWidgets.QFileDialog.Options()
-        options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        file_name = './PN00-4.edf'
+    def fuzzy_channel_matching(self, raw_channel_names):
+        matched_channels = []
+        for channel in raw_channel_names:
+            for std_channel in self.channels_to_plot:
+                if channel.lower() == std_channel.lower():
+                    matched_channels.append(channel)
+                    break
 
+        return matched_channels
+    '''
+        def load_file(self, file_name):
+            if file_name:
+                self.raw = mne.io.read_raw_edf(file_name, preload=True)
+                raw_channel_names = self.raw.ch_names
+                matched_channels = self.fuzzy_channel_matching(raw_channel_names)
+                self.channels_to_plot = matched_channels[:]
+    '''
+
+
+    def load_file(self, file_name='./PN00-4.edf'):
         if file_name:
             self.raw = mne.io.read_raw_edf(file_name, preload=True)
 
@@ -338,31 +389,93 @@ class Ui_MainWindow(object):
         self.CloseButton.setText(translator("MainWindow", "Close"))
         self.StopButton.setText(translator("MainWindow", "Start"))
 
+    def reset_plot(self):
+        """Clears the old plot and resets all relevant variables."""
 
+        # Clear and remove main signal plot
+        if self.signalPlot is not None:
+            self.signalPlot.clear_plot(self.data_times)  # Pass data_times argument
+            self.signalPlot.plotWidget.deleteLater()
+            self.signalPlot = None
+
+        # Clear prediction plot and buffers
+        if self.predictionTables is not None:
+            self.predictionTables.plotWidget.clear()
+            self.predictionTables.predictionsBuffer.clear()
+            self.predictionTables.realDataBuffer.clear()
+            self.predictionTables.init_empty_plot(self.predictionTables.plotWidget, title="Prediction Plot")
+
+        # Reset other variables
+        self.timer.stop()
+        self.data_buffers = {channel: ([], []) for channel in self.channels_to_plot}
+        self.elapsed_time = 0
+        self.start_time = 0
+        self.plot_extension = 0
+        self.source_current_start_idx = 0
+        self.source_current_end_idx = 32
+
+        # Re-initialize signalPlot
+        signalPlotHeight = 620  # Or get it from the layout
+        layout = self.centralwidget.layout()
+        self.setup_figure_and_canvas(layout, signalPlotHeight)
+
+    def change_edf(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
+            None, "Open EDF File", "", "EDF Files (*.edf);;All Files (*)", options=options
+        )
+        if file_name:
+            self.load_file(file_name)
+            self.reset_plot()
+            self.StopButton.setText("Start")
+            self.isPlotting = False
+
+    def save_to_edf(self):
+        """Saves the buffered EEG data to an EDF file."""
+
+        channel_names = list(self.data_buffers.keys())
+        data_values = np.array(list(self.data_buffers.values()))
+        data_values = data_values[:, 0].T
+        info = mne.create_info(
+            ch_names=channel_names,
+            sfreq=self.signalFrequency,
+            ch_types='eeg'
+        )
+        raw = mne.io.RawArray(data_values.T, info)
+
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)",
+                                                   options=options)
+        if file_path:
+            if not file_path.endswith('.edf'):
+                file_path += '.edf'
+            mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
+            show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
 
     def save_csv(self):
         if not self.timeInitialized: return
         self.setEndRecordTime()
         columns = self.channels_to_plot
-        filename = f'SavedRecords/{self.startTime.replace(":", "_")}--{self.endTime.replace(":", "_")}.csv'
-        with open(filename, 'w', newline='') as file:
+        with open(f'SavedRecords/{self.startTime}--{self.endTime}.csv', 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(columns)
             writer.writerows(self.predictionsBuffer)
-        show_popup("Saved", f"Report saved in : {filename}", QtWidgets.QMessageBox.Information)
 
     def setStartRecordTime(self):
         if self.timeInitialized == True: return
         self.timeInitialized = True
-        self.startTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.startTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     def setEndRecordTime(self):
         if self.timeInitialized == False: return
-        self.endTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.endTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         self.timeInitialized = False
+
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow(MainWindow)

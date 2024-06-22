@@ -57,4 +57,5 @@ class SignalPlot():
             curve.setData(timeY_decimated, dataX_decimated)
             self.curveHandlers.append(curve)
             self.plotHandler.setDownsampling(True, True, 'subsample')
+            self.plotHandler.getAxis('left').setStyle(tickFont=None, showValues=False)
             self.plotHandler.setClipToView(True)
