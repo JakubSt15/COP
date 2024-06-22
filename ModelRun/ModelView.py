@@ -1,3 +1,4 @@
+import json
 import os
 import numpy as np
 import torch
@@ -35,6 +36,7 @@ class Ui_MainWindow(object):
         self.signalPlot = None
         self.predictionTables = None
         self.raw = None
+        self.threesholds = None
         self.setup_initial_values()
         self.setupUi(MainWindow)
 
@@ -67,6 +69,16 @@ class Ui_MainWindow(object):
         self.start_time = 0
         self.plot_extension = 0
         self.data_times = 32
+        self.threesholds= {
+            'High Risk': 90,
+            'Medium High Risk': 80,
+            'Medium Risk': 70,
+            'Medium Low Risk': 60,
+            'Low Risk': 50,
+            'Very Low Risk': 25,
+            "Warning enabled": False
+         }
+        self.readThreesholds()
         self.channels_to_plot = ['eeg fp1', 'eeg f3', 'eeg c3',
                                  'eeg p3', 'eeg o1', 'eeg f7', 'eeg t3',
                                  'eeg t5', 'eeg fz', 'eeg cz', 'eeg pz',
@@ -132,6 +144,7 @@ class Ui_MainWindow(object):
         self.SaveCSVButton = QtWidgets.QPushButton("Save attack info CSV", centralwidget)
         self.SaveCSVButton.clicked.connect(self.save_csv)
 
+
     def setup_layout(self, centralwidget):
         layout = QtWidgets.QVBoxLayout(centralwidget)
 
@@ -190,12 +203,12 @@ class Ui_MainWindow(object):
 
         # Define the legend colors and corresponding labels
         legend_data = [
-            (0.9, '#fc0303', 'High Risk >90%'),
-            (0.8, '#fc3503', 'Medium High Risk >80%'),
-            (0.7, '#fc6b03', 'Medium Risk >70%'),
-            (0.6, '#fcb503', 'Medium Low Risk >60%'),
-            (0.5, '#fcf403', 'Low Risk >50%'),
-            (0.25, '#bafc03', 'Very Low Risk >25%')
+            (self.threesholds['high'], '#fc0303', 'High Risk >'+str(self.threesholds['high'])+'%'),
+            (self.threesholds['medium_high'], '#fc3503', 'Medium High Risk >'+str(self.threesholds['medium_high'])+'%'),
+            (self.threesholds['medium'], '#fc6b03', 'Medium Risk >'+str(self.threesholds['medium'])+'%'),
+            (self.threesholds['medium_low'], '#fcb503', 'Medium Low Risk >'+str(self.threesholds['medium_low'])+'%'),
+            (self.threesholds['low'], '#fcf403', 'Low Risk >'+str(self.threesholds['low'])+'%'),
+            (self.threesholds['very_low'], '#bafc03', 'Very Low Risk >'+str(self.threesholds['very_low'])+'%')
         ]
 
         for threshold, color, label_text in legend_data:
@@ -431,6 +444,11 @@ class Ui_MainWindow(object):
         if self.timeInitialized == False: return
         self.endTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         self.timeInitialized = False
+
+    def readThreesholds(self):
+        with open("thresholds.json", "r") as file:
+            data = json.load(file)
+            self.threesholds = data
 
 
 if __name__ == "__main__":

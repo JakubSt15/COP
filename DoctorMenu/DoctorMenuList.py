@@ -6,6 +6,7 @@ from PyQt5 import QtCore, QtWidgets
 from ShowEDF import ShowEDFWindow
 from ModelRun import ModelView
 from UserListWindow import UserListWindow
+from Options import Options
 import LoginWindow
 import csv
 
@@ -37,6 +38,7 @@ class Ui_MainWindow(object):
         self.ShowEDFFile.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout.addWidget(self.ShowEDFFile, 1, 0, 1, 1)  # Add to grid layout
         self.ShowEDFFile.clicked.connect(self.onShowEDFCliced)
+
         if(self.userType == '3'):
             self.UsersList = QtWidgets.QPushButton(self.centralwidget)
             self.UsersList.setObjectName("UsersList")
@@ -50,10 +52,16 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.RunModel, 2, 0, 1, 1)  # Add to grid layout
         self.RunModel.clicked.connect(self.onShowRunModelCliced)
 
+        self.Options = QtWidgets.QPushButton(self.centralwidget)
+        self.Options.setObjectName("Options")
+        self.Options.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.gridLayout.addWidget(self.Options, 3, 0, 1, 1)
+        self.Options.clicked.connect(self.onShowOptionsCliced)
+
         self.Logout = QtWidgets.QPushButton(self.centralwidget)
         self.Logout.setObjectName("Logout")
         self.Logout.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.Logout, 3, 0, 1, 1)
+        self.gridLayout.addWidget(self.Logout, 4, 0, 1, 1)
         self.Logout.clicked.connect(self.onLogoutCliced)
 
         # Set the central widget of the main window
@@ -109,6 +117,7 @@ class Ui_MainWindow(object):
         if(self.userType == '3'):
             self.UsersList.setStyleSheet(button_style)
         self.RunModel.setStyleSheet(button_style)
+        self.Options.setStyleSheet(button_style)
         self.Logout.setStyleSheet(button_style_reversed)
 
     def retranslateUi(self, MainWindow):
@@ -124,6 +133,7 @@ class Ui_MainWindow(object):
             self.UsersList.setText(_translate("Doctor Menu List", "See Users List"))
         self.RunModel.setText(_translate("Doctor Menu List", "Run Model"))
         self.ShowEDFFile.setText(_translate("Doctor Menu List", "Show EDF File"))
+        self.Options.setText(_translate("Doctor Menu List", "Options"))
         self.Logout.setText(_translate("Doctor Menu List", "Logout"))
 
     def onShowUserList(self):
@@ -146,9 +156,15 @@ class Ui_MainWindow(object):
         self.secondWindow = ModelView.Ui_MainWindow(self.runModel)
         self.secondWindow.setupUi(self.runModel)
         self.runModel.show()
+    
+    def onShowOptionsCliced(self):
+        QtWidgets.qApp.closeAllWindows()
+        self.options = QtWidgets.QMainWindow()
+        self.secondWindow = Options.Ui_Options()
+        self.secondWindow.setupUi(self.options)
+        self.options.show()
 
     def onLogoutCliced(self):
-
         QtWidgets.qApp.closeAllWindows()
         self.logoutWindow = QtWidgets.QMainWindow()
         self.secondWindow = LoginWindow.Ui_LoginWindow()
