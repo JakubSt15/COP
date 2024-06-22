@@ -1,4 +1,5 @@
 import csv
+import json
 from PyQt5 import QtCore, QtWidgets
 from CommonTools.CommonTools import show_popup, QMessageBox
 class Ui_LoginWindow(object):
@@ -63,7 +64,7 @@ class Ui_LoginWindow(object):
             for user in users:
                 if user[4] == login and user[5] == password:
                     show_popup("Sukces", f"Zalogowano użytkownika {user[1]} {user[2]} ({user[3]})", QMessageBox.Information)
-                    self.createLoggedUser(login, user[3])
+                    self.createLoggedUser(login, user[1], user[2], user[3])
                     return True
 
             return False
@@ -73,10 +74,15 @@ class Ui_LoginWindow(object):
         else:
             self.MenuList()
 
-    def createLoggedUser(self, login, userType):
-        with open("./LoggedUser.csv", "w") as csvfile:
-            writer = csv.writer(csvfile, delimiter=";")
-            writer.writerow([login, userType])
+    def createLoggedUser(self, login,name,surname, userType):
+        login_info = {
+            "login": login,
+            "name":name,
+            "surname":surname,
+            "userType": userType
+        }
+        with open("log_temp.json", "w") as jsonfile:
+            json.dump(login_info, jsonfile, indent=4)
 
     def MenuList(self):
         from DoctorMenu.DoctorMenuList import Ui_MainWindow

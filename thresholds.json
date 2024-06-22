@@ -1,9 +1,8 @@
 {
-    "high": 96,
-    "medium_high": 70,
-    "medium": 60,
-    "medium_low": 50,
-    "low": 35,
-    "very_low": 25,
-    "warning": 75
+    "high": 90,
+    "medium_high": 80,
+    "medium": 67,
+    "medium_low": 60,
+    "low": 50,
+    "very_low": 25
 }

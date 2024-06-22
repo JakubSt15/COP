@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QListWidget, QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QApplication
 from PyQt5.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
@@ -20,6 +21,10 @@ from ModelRun.PredictionPlots import PredictionPlots
 import csv
 import logging
 from datetime import datetime
+import matplotlib.pyplot as plt
+from fpdf import FPDF
+from datetime import datetime
+import tempfile
 
 plt.style.use('dark_background')
 
@@ -39,7 +44,6 @@ class Ui_MainWindow(object):
         self.threesholds = None
         self.setup_initial_values()
         self.setupUi(MainWindow)
-
         ''' Timer for updating plots '''
         self.timer = QtCore.QTimer()
         self.timer.setInterval(50)  # Update interval in milliseconds
@@ -53,7 +57,7 @@ class Ui_MainWindow(object):
 
         self.isPlotting = False
         self.setupUi(MainWindow)
-
+        
         ''' CSV save data (exact time of start, end record, prediction buffer )'''
         self.timeInitialized = False
         self.startTime = None
@@ -75,9 +79,8 @@ class Ui_MainWindow(object):
             'Medium Risk': 70,
             'Medium Low Risk': 60,
             'Low Risk': 50,
-            'Very Low Risk': 25,
-            "Warning enabled": False
-         }
+            'Very Low Risk': 25
+        }
         self.readThreesholds()
         self.channels_to_plot = ['eeg fp1', 'eeg f3', 'eeg c3',
                                  'eeg p3', 'eeg o1', 'eeg f7', 'eeg t3',
@@ -142,7 +145,7 @@ class Ui_MainWindow(object):
         self.ChooseButton.clicked.connect(self.change_edf)
 
         self.SaveCSVButton = QtWidgets.QPushButton("Save attack info CSV", centralwidget)
-        self.SaveCSVButton.clicked.connect(self.save_csv)
+        self.SaveCSVButton.clicked.connect(self.generate_pdf_report)
 
 
     def setup_layout(self, centralwidget):
@@ -369,9 +372,6 @@ class Ui_MainWindow(object):
             self.table.updateTable(updated_attack_proba)
             self.predictionsBuffer.append(updated_attack_proba)
             self.predictionTables.upgradePredictionPlot()
-            pup_up_condition = any(element*100>self.threesholds['warning'] for element in updated_attack_proba)
-            if pup_up_condition and self.threesholds['warning'] != True:
-                show_popup("Warning", f"High risk of epilepsy attack detected!", QtWidgets.QMessageBox.Warning)
 
     def clicked(self, qmodelindex):
         self.plot_extension = int(self.listwidget.currentItem().text())
@@ -437,6 +437,58 @@ class Ui_MainWindow(object):
             writer.writerow(columns)
             writer.writerows(self.predictionsBuffer)
         show_popup("Saved", f"Report saved in : {filename}", QtWidgets.QMessageBox.Information)
+    
+    def generate_pdf_report(self):
+        login,name, surname, _ = self.readLoggedUser()
+        if not self.timeInitialized:
+            return
+        
+        self.setEndRecordTime()
+        
+        # Przygotowanie danych
+        columns = ["Time (s)"] + self.channels_to_plot
+        data = [[round(3 + 5 * (i+1), 1)] + [round(value * 100, 2) for value in row] for i, row in enumerate(self.predictionsBuffer)]
+        
+        # Tworzenie PDF w orientacji poziomej
+        pdf = FPDF(orientation='L', unit='mm', format='A4')
+        pdf.add_page()
+        
+        # Tytuł
+        pdf.set_font("Arial", "B", 16)
+        pdf.cell(0, 10, "EEG Seizure Prediction Report", 0, 1, "C")
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, f"User: {name+' '+surname}", 0, 1, "C")
+        pdf.cell(0, 10, f"Start Time: {self.startTime}", 0, 1, "C")
+        pdf.ln(5)
+        
+        # Informacja o procentowym prawdopodobieństwie
+        pdf.set_font("Arial", "I", 10)
+        pdf.cell(0, 10, "Values represent percentage probability of seizure occurrence", 0, 1, "C")
+        pdf.ln(5)
+        
+        # Tabela z danymi
+        pdf.set_font("Arial", "B", 8)
+        table_width = pdf.w - 20  # Margines 10mm z każdej strony
+        col_width = table_width / len(columns)
+        
+        # Nagłówki kolumn
+        for col in columns:
+            pdf.cell(col_width, 7, col, 1, 0, 'C')
+        pdf.ln()
+        
+        # Dane
+        pdf.set_font("Arial", "", 7)
+        for row in data:
+            pdf.cell(col_width, 6, f"{row[0]:.1f}", 1, 0, 'C')  # Czas
+            for item in row[1:]:
+                pdf.cell(col_width, 6, f"{item:.2f}%", 1, 0, 'C')  # Prawdopodobieństwa
+            pdf.ln()
+        
+        # Zapisywanie PDF
+        pdf_filename = f'Report_{self.startTime.replace(":", "_")}--{self.endTime.replace(":", "_")}.pdf'
+        pdf.output(pdf_filename)
+        
+        show_popup("Saved", f"Report saved as : {pdf_filename}", QtWidgets.QMessageBox.Information)
 
     def setStartRecordTime(self):
         if self.timeInitialized == True: return
@@ -452,7 +504,10 @@ class Ui_MainWindow(object):
         with open("thresholds.json", "r") as file:
             data = json.load(file)
             self.threesholds = data
-
+    def readLoggedUser(self):
+        with open("log_temp.json", "r") as jsonfile:
+            login_info = json.load(jsonfile)
+        return login_info["login"], login_info["name"], login_info["surname"], login_info["userType"]
 
 if __name__ == "__main__":
     import sys

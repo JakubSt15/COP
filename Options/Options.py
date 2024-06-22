@@ -158,31 +158,6 @@ class Ui_Options(object):
         self.label_very_low_value.setObjectName("label_very_low_value")
         self.gridLayout.addWidget(self.label_very_low_value, 6, 2, 1, 1)
 
-        # Enable Warning Checkbox and its Input
-        self.enable_warning_layout = QtWidgets.QHBoxLayout()
-        self.enable_warning = QtWidgets.QCheckBox(self.centralwidget)
-        font = QtGui.QFont()
-        font.setPointSize(16)
-        self.enable_warning.setFont(font)
-        self.enable_warning.setObjectName("enable_warning")
-        self.enable_warning_layout.addWidget(self.enable_warning)
-
-        self.warning_value = QtWidgets.QSlider(self.centralwidget)
-        self.warning_value.setOrientation(QtCore.Qt.Horizontal)
-        self.warning_value.setRange(0, 100)
-        self.warning_value.setObjectName("warning_value")
-        self.warning_value.valueChanged.connect(self.update_label_warning_value)
-        self.enable_warning_layout.addWidget(self.warning_value)
-
-        self.label_warning_value = QtWidgets.QLabel(self.centralwidget)
-        font = QtGui.QFont()
-        font.setPointSize(16)
-        self.label_warning_value.setFont(font)
-        self.label_warning_value.setObjectName("label_warning_value")
-        self.enable_warning_layout.addWidget(self.label_warning_value)
-
-        self.gridLayout.addLayout(self.enable_warning_layout, 7, 0, 1, 3)
-
         # Save Button
         self.Save = QtWidgets.QPushButton(self.centralwidget)
         self.Save.setObjectName("Save")
@@ -298,7 +273,6 @@ class Ui_Options(object):
         self.slider_medium_low.setStyleSheet(slider_style)
         self.slider_low.setStyleSheet(slider_style)
         self.slider_very_low.setStyleSheet(slider_style)
-        self.warning_value.setStyleSheet(slider_style)
 
         label_style = """
             QLabel {
@@ -311,13 +285,7 @@ class Ui_Options(object):
         self.label_medium_low.setStyleSheet(label_style)
         self.label_low.setStyleSheet(label_style)
         self.label_very_low.setStyleSheet(label_style)
-        self.label_warning_value.setStyleSheet(label_style)
-        checkbox_style = """
-            QCheckBox {
-                font-size: 16px;
-            }
-        """
-        self.enable_warning.setStyleSheet(checkbox_style)
+
 
     def retranslateUi(self, AddUser):
         _translate = QtCore.QCoreApplication.translate
@@ -328,7 +296,6 @@ class Ui_Options(object):
         self.label_medium_low.setText(_translate("AddUser", "Medium Low Risk Threshold:"))
         self.label_low.setText(_translate("AddUser", "Low Risk Threshold:"))
         self.label_very_low.setText(_translate("AddUser", "Very Low Risk Threshold:"))
-        self.enable_warning.setText(_translate("AddUser", "Enable Pop-up Warning"))
         self.Save.setText(_translate("AddUser", "Save"))
         self.Close.setText(_translate("AddUser", "Close"))
         self.SetToDefault.setText(_translate("AddUser", "Set to Default"))
@@ -351,9 +318,6 @@ class Ui_Options(object):
     def update_label_very_low_value(self):
         self.label_very_low_value.setText(str(self.slider_very_low.value())+"%")
 
-    def update_label_warning_value(self):
-        self.label_warning_value.setText(str(self.warning_value.value())+"%")
-
 
     def onSaveClicked(self):
         thresholds = {
@@ -363,7 +327,6 @@ class Ui_Options(object):
             "medium_low": self.slider_medium_low.value(),
             "low": self.slider_low.value(),
             "very_low": self.slider_very_low.value(),
-            "warning": self.warning_value.value() if self.enable_warning.isChecked() else "Disabled"
         }
         with open("thresholds.json", "w") as jsonfile:
             json.dump(thresholds, jsonfile, indent=4)
@@ -386,15 +349,12 @@ class Ui_Options(object):
         self.slider_medium_low.setValue(60)
         self.slider_low.setValue(50)
         self.slider_very_low.setValue(25)
-        self.warning_value.setValue(75)
-        self.enable_warning.setChecked(True)
         self.update_label_high_value()
         self.update_label_medium_high_value()
         self.update_label_medium_value()
         self.update_label_medium_low_value()
         self.update_label_low_value()
         self.update_label_very_low_value()
-        self.update_label_warning_value()
     
     def read_thresholds(self):
         try:
@@ -406,15 +366,12 @@ class Ui_Options(object):
                 self.slider_medium_low.setValue(thresholds["medium_low"])
                 self.slider_low.setValue(thresholds["low"])
                 self.slider_very_low.setValue(thresholds["very_low"])
-                self.warning_value.setValue(thresholds["warning"])
-                self.enable_warning.setChecked(thresholds["warning"] != "Disabled")
                 self.update_label_high_value()
                 self.update_label_medium_high_value()
                 self.update_label_medium_value()
                 self.update_label_medium_low_value()
                 self.update_label_low_value()
                 self.update_label_very_low_value()
-                self.update_label_warning_value()
         except Exception as e:
             print(e)
 

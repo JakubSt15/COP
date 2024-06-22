@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This line imports necessary modules from PyQt5 library
+import json
 from PyQt5 import QtCore, QtWidgets
 
 from ShowEDF import ShowEDFWindow
@@ -24,7 +25,7 @@ class Ui_MainWindow(object):
 
         # Set a minimum size for the window (optional)
         MainWindow.setMinimumSize(600, 400)  # Adjust values as needed
-        self.userName,self.userType = self.readLoggedUser()
+        _,_,_,self.userType = self.readLoggedUser()
         # Create the central widget for the main window
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -172,10 +173,9 @@ class Ui_MainWindow(object):
         self.logoutWindow.show()
         
     def readLoggedUser(self):
-        with open("./LoggedUser.csv", "r") as csvfile:
-            reader = csv.reader(csvfile, delimiter=";")
-            for row in reader:
-                return row
+        with open("log_temp.json", "r") as jsonfile:
+            login_info = json.load(jsonfile)
+        return login_info["login"], login_info["name"], login_info["surname"], login_info["userType"]
             
 if __name__ == "__main__":
     import sys
