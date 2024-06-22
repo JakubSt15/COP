@@ -63,6 +63,7 @@ class Ui_LoginWindow(object):
             for user in users:
                 if user[4] == login and user[5] == password:
                     show_popup("Sukces", f"Zalogowano użytkownika {user[1]} {user[2]} ({user[3]})", QMessageBox.Information)
+                    self.createLoggedUser(login, user[3])
                     return True
 
             return False
@@ -71,6 +72,11 @@ class Ui_LoginWindow(object):
             show_popup("Błąd", "Nieprawidłowe Hasło lub Login!", QMessageBox.Warning)
         else:
             self.MenuList()
+
+    def createLoggedUser(self, login, userType):
+        with open("./LoggedUser.csv", "w") as csvfile:
+            writer = csv.writer(csvfile, delimiter=";")
+            writer.writerow([login, userType])
 
     def MenuList(self):
         from DoctorMenu.DoctorMenuList import Ui_MainWindow

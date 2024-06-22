@@ -7,6 +7,7 @@ from ShowEDF import ShowEDFWindow
 from ModelRun import ModelView
 from UserListWindow import UserListWindow
 import LoginWindow
+import csv
 
 
 # This class definition creates the user interface for the main window
@@ -22,11 +23,10 @@ class Ui_MainWindow(object):
 
         # Set a minimum size for the window (optional)
         MainWindow.setMinimumSize(600, 400)  # Adjust values as needed
-
+        self.userName,self.userType = self.readLoggedUser()
         # Create the central widget for the main window
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-
         # Create a grid layout for arranging the buttons
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout.setContentsMargins(25, 25, 25, 25)
@@ -37,12 +37,12 @@ class Ui_MainWindow(object):
         self.ShowEDFFile.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout.addWidget(self.ShowEDFFile, 1, 0, 1, 1)  # Add to grid layout
         self.ShowEDFFile.clicked.connect(self.onShowEDFCliced)
-
-        self.UsersList = QtWidgets.QPushButton(self.centralwidget)
-        self.UsersList.setObjectName("UsersList")
-        self.UsersList.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout.addWidget(self.UsersList, 0, 0, 1, 1)  # Add to grid layout
-        self.UsersList.clicked.connect(self.onShowUserList)
+        if(self.userType == '3'):
+            self.UsersList = QtWidgets.QPushButton(self.centralwidget)
+            self.UsersList.setObjectName("UsersList")
+            self.UsersList.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            self.gridLayout.addWidget(self.UsersList, 0, 0, 1, 1)  # Add to grid layout
+            self.UsersList.clicked.connect(self.onShowUserList)
 
         self.RunModel = QtWidgets.QPushButton(self.centralwidget)
         self.RunModel.setObjectName("RunModel")
@@ -106,7 +106,8 @@ class Ui_MainWindow(object):
             }
         """
         self.ShowEDFFile.setStyleSheet(button_style)
-        self.UsersList.setStyleSheet(button_style)
+        if(self.userType == '3'):
+            self.UsersList.setStyleSheet(button_style)
         self.RunModel.setStyleSheet(button_style)
         self.Logout.setStyleSheet(button_style_reversed)
 
@@ -119,7 +120,8 @@ class Ui_MainWindow(object):
         """
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("Doctor Menu List", "Doctor Menu List"))
-        self.UsersList.setText(_translate("Doctor Menu List", "See Users List"))
+        if(self.userType == '3'):
+            self.UsersList.setText(_translate("Doctor Menu List", "See Users List"))
         self.RunModel.setText(_translate("Doctor Menu List", "Run Model"))
         self.ShowEDFFile.setText(_translate("Doctor Menu List", "Show EDF File"))
         self.Logout.setText(_translate("Doctor Menu List", "Logout"))
@@ -152,7 +154,13 @@ class Ui_MainWindow(object):
         self.secondWindow = LoginWindow.Ui_LoginWindow()
         self.secondWindow.setupUi(self.logoutWindow)
         self.logoutWindow.show()
-
+        
+    def readLoggedUser(self):
+        with open("./LoggedUser.csv", "r") as csvfile:
+            reader = csv.reader(csvfile, delimiter=";")
+            for row in reader:
+                return row
+            
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)

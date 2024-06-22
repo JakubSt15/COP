@@ -360,7 +360,8 @@ class Ui_MainWindow(object):
         if not self.timeInitialized: return
         self.setEndRecordTime()
         columns = self.channels_to_plot
-        with open(f'SavedRecords/{self.startTime}--{self.endTime}.csv', 'w', newline='') as file:
+        filename = f'SavedRecords/{self.startTime.replace(":", "_")}--{self.endTime.replace(":", "_")}.csv'
+        with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(columns)
             writer.writerows(self.predictionsBuffer)
