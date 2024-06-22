@@ -46,11 +46,11 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        self.channels_to_plot = ['EEG Fp1', 'EEG F3', 'EEG C3',
-                                 'EEG P3', 'EEG O1', 'EEG F7', 'EEG T3',
-                                 'EEG T5', 'EEG Fz', 'EEG Cz', 'EEG Pz',
-                                 'EEG Fp2', 'EEG F4', 'EEG C4', 'EEG P4',
-                                 'EEG O2', 'EEG F8', 'EEG T4', 'EEG T6']
+        self.channels_to_plot = ['eeg fp1', 'eeg f3', 'eeg c3',
+                                 'eeg p3', 'eeg o1', 'eeg f7', 'eeg t3',
+                                 'eeg t5', 'eeg fz', 'eeg cz', 'eeg pz',
+                                 'eeg fp2', 'eeg f4', 'eeg c4', 'eeg p4',
+                                 'eeg o2', 'eeg f8', 'eeg t4', 'eeg t6']
 
         self.figure, self.axes = plt.subplots(len(self.channels_to_plot), 1, sharex=True, figsize=(10, 20))
         plt.subplots_adjust(bottom=0.05, left=0.005, top=0.95)
@@ -73,6 +73,7 @@ class Ui_MainWindow(object):
 
         self.initial_range = 20000
         self.current_start_idx = 0
+        self.channel_map = {}
 
     def close_window(self):
         QtWidgets.qApp.closeAllWindows()
@@ -92,6 +93,9 @@ class Ui_MainWindow(object):
             self.n_samples = len(self.raw.times)
             self.current_end_idx = min(self.n_samples, self.initial_range)
             self.slider.setRange(0, self.n_samples - self.initial_range)
+
+            # Create a mapping from normalized channel names to original names
+            self.channel_map = {ch.lower(): ch for ch in self.raw.ch_names}
             self.update_plot()
 
     def update_plot(self):
@@ -106,13 +110,15 @@ class Ui_MainWindow(object):
         colors = [cmap(i) for i in range(len(self.channels_to_plot))]
 
         for i, channel in enumerate(self.channels_to_plot):
-            data, times = self.raw[channel, self.current_start_idx:self.current_end_idx]
-            self.axes[i].plot(times, data[0], label=channel, color=colors[i])
-            self.axes[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            self.axes[i].set_yticklabels([])
-            self.axes[i].spines['bottom'].set_visible(False)
-            self.axes[i].spines['right'].set_visible(False)
-            self.axes[i].spines['left'].set_visible(False)
+            original_channel = self.channel_map.get(channel)
+            if original_channel is not None:
+                data, times = self.raw[original_channel, self.current_start_idx:self.current_end_idx]
+                self.axes[i].plot(times, data[0], label=original_channel, color=colors[i])
+                self.axes[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                self.axes[i].set_yticklabels([])
+                self.axes[i].spines['bottom'].set_visible(False)
+                self.axes[i].spines['right'].set_visible(False)
+                self.axes[i].spines['left'].set_visible(False)
 
         self.axes[-1].set_xlabel('Time')
         self.axes[-1].set_xticklabels(

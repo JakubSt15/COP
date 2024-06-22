@@ -1,0 +1,39 @@
+name: Build and Package EpilepsyPredictionApp
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install PyInstaller
+      run: pip install pyinstaller
+
+    - name: Build executable with PyInstaller
+      run: pyinstaller EpilepsyPredictionApp.spec
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: epilepsy-prediction-app
+        path: dist/

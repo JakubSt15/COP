@@ -42,7 +42,8 @@ class SignalPlot():
 
     ''' Gets from EDF only these channels that we need '''
     def filter_channels(self, data, channels):
-        return {ch: data[ch] for ch in channels if ch in data.ch_names}
+        lower_to_original_ch_names = {ch.lower(): ch for ch in data.ch_names}
+        return {ch: data[lower_to_original_ch_names[ch.lower()]] for ch in channels if ch.lower() in lower_to_original_ch_names}
     
     def initPlotHandler(self):
         self.plotWidget = pg.GraphicsLayoutWidget()
@@ -68,7 +69,7 @@ class SignalPlot():
 
     def update(self, followPlot=True):
         ''' signal - Y axis, time - X axis'''
-        _new_data = self.signalPlotData['EEG Fp1']
+        _new_data = self.signalPlotData['eeg fp1']
         _timeY = _new_data[1]
         plotSamplNumber = self.currentSample * self.plottedDecimation
         currentRecordTime = _timeY[plotSamplNumber]

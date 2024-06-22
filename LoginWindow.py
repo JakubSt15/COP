@@ -40,7 +40,7 @@ class Ui_LoginWindow(object):
         LoginWindow.setStatusBar(self.statusbar)
 
         LoginWindow.setCentralWidget(self.centralwidget)
-
+        self.setStyles()
         self.retranslateUi(LoginWindow)
         QtCore.QMetaObject.connectSlotsByName(LoginWindow)
 
@@ -80,6 +80,43 @@ class Ui_LoginWindow(object):
         self.second_ui = Ui_MainWindow()
         self.second_ui.setupUi(self.doctor_menu_list)
         self.doctor_menu_list.show()
+    
+    def setStyles(self):
+        # Set button style
+        self.LoginButton.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+        """)
+
+        # Set text box style
+        self.loginTextBox.setStyleSheet("""
+            QLineEdit {
+                border: 2px solid #4CAF50;
+                border-radius: 10px;
+                padding: 5px;
+            }
+        """)
+        self.passwordTextBox.setStyleSheet("""
+            QLineEdit {
+                border: 2px solid #4CAF50;
+                border-radius: 10px;
+                padding: 5px;
+            }
+        """)
 
 
 if __name__ == "__main__":

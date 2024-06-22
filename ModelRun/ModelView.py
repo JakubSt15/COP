@@ -56,11 +56,11 @@ class Ui_MainWindow(object):
         self.start_time = 0
         self.plot_extension = 0
         self.data_times = 32
-        self.channels_to_plot = ['EEG Fp1', 'EEG F3', 'EEG C3',
-                            'EEG P3', 'EEG O1', 'EEG F7', 'EEG T3',
-                            'EEG T5', 'EEG Fz', 'EEG Cz', 'EEG Pz',
-                            'EEG Fp2', 'EEG F4', 'EEG C4', 'EEG P4',
-                            'EEG O2', 'EEG F8', 'EEG T4', 'EEG T6']
+        self.channels_to_plot = ['eeg fp1', 'eeg f3', 'eeg c3',
+                                 'eeg p3', 'eeg o1', 'eeg f7', 'eeg t3',
+                                 'eeg t5', 'eeg fz', 'eeg cz', 'eeg pz',
+                                 'eeg fp2', 'eeg f4', 'eeg c4', 'eeg p4',
+                                 'eeg o2', 'eeg f8', 'eeg t4', 'eeg t6']
         self.temp = [0] * len(self.channels_to_plot)
         self.source_initial_range = 100
         self.source_current_start_idx = 0
@@ -73,6 +73,7 @@ class Ui_MainWindow(object):
         layout = self.setup_layout(centralwidget)
         self.load_file()
         self.retranslateUi(MainWindow)
+        self.apply_styles()
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def setup_main_window(self, MainWindow):
@@ -136,10 +137,10 @@ class Ui_MainWindow(object):
     def setup_button_layout(self, layout, buttonSize):
         buttonBox = QtWidgets.QGroupBox()
         buttonLayout = QtWidgets.QHBoxLayout(buttonBox)
-        self.StopButton.setFixedSize(buttonSize[0], buttonSize[1])
-        self.CloseButton.setFixedSize(buttonSize[0], buttonSize[1])
-        self.SaveButton.setFixedSize(buttonSize[0], buttonSize[1])
-        self.SaveCSVButton.setFixedSize(buttonSize[0], buttonSize[1])
+        # self.StopButton.setFixedSize(buttonSize[0], buttonSize[1])
+        # self.CloseButton.setFixedSize(buttonSize[0], buttonSize[1])
+        # self.SaveButton.setFixedSize(buttonSize[0], buttonSize[1])
+        # self.SaveCSVButton.setFixedSize(buttonSize[0], buttonSize[1])
         buttonLayout.addWidget(self.StopButton)
         buttonLayout.addWidget(self.CloseButton)
         buttonLayout.addWidget(self.SaveButton)
@@ -255,6 +256,46 @@ class Ui_MainWindow(object):
         self.secondWindow = DoctorMenuList.Ui_MainWindow()
         self.secondWindow.setupUi(self.doctorMenu)
         self.doctorMenu.show()
+
+    def apply_styles(self):
+        button_style = """
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+        """
+        button_style_reversed = """
+            QPushButton {
+                background-color: #AF4CAB;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #AF4CAB;
+            }
+        """
+        self.CloseButton.setStyleSheet(button_style_reversed)
+        self.StopButton.setStyleSheet(button_style)
+        self.SaveButton.setStyleSheet(button_style)
+        self.SaveCSVButton.setStyleSheet(button_style)
 
     def stop_plot(self):
         _translate = QtCore.QCoreApplication.translate

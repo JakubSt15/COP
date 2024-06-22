@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 from PyQt5 import QtCore, QtGui, QtWidgets
 from DoctorMenu import DoctorMenuList
+from AddUser import AddUser
 
 
 class Ui_UserListWindow(QtWidgets.QMainWindow):
@@ -9,13 +10,9 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setupUi(self)
 
-        # Connect resizeEvent to a function
-        self.resizeEvent = self.on_resize
-
     def setupUi(self, UserListWindow):
         UserListWindow.setObjectName("UserListWindow")
         UserListWindow.resize(800, 600)
-
 
         self.centralwidget = QtWidgets.QWidget(UserListWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -51,10 +48,27 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
         # Add the splitter to the main layout
         self.verticalLayout.addWidget(self.splitter)
 
+        # Create a horizontal layout for the buttons
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+
         # Create and add the close button
         self.CloseButton = QtWidgets.QPushButton(self.centralwidget)
         self.CloseButton.setObjectName("CloseButton")
-        self.verticalLayout.addWidget(self.CloseButton)
+        self.horizontalLayout.addWidget(self.CloseButton)
+
+        # Create and add the remove button
+        self.RemoveButton = QtWidgets.QPushButton(self.centralwidget)
+        self.RemoveButton.setObjectName("RemoveButton")
+        self.horizontalLayout.addWidget(self.RemoveButton)
+
+        # Create and add the Add User button
+        self.AddUserButton = QtWidgets.QPushButton(self.centralwidget)
+        self.AddUserButton.setObjectName("AddUserButton")
+        self.horizontalLayout.addWidget(self.AddUserButton)
+
+        # Add the horizontal layout to the main vertical layout
+        self.verticalLayout.addLayout(self.horizontalLayout)
 
         UserListWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(UserListWindow)
@@ -69,6 +83,12 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
         # Connect the close button
         self.CloseButton.clicked.connect(self.close_window)
 
+        # Connect the remove button
+        self.RemoveButton.clicked.connect(self.remove_selected_user)
+
+        # Connect the add user button
+        self.AddUserButton.clicked.connect(self.onAddUserCliced)
+
         # Connect the user list view selection
         self.userListView.selectionModel().selectionChanged.connect(self.displayUserDetails)
 
@@ -76,8 +96,72 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
         self.splitter.setSizes([UserListWindow.width() // 4, UserListWindow.width() * 3 // 4])
         self.splitter.splitterMoved.connect(self.adjust_splitter)
 
-        # Connect resizeEvent to a function
-        self.resizeEvent = self.on_resize
+        self.apply_styles()
+
+
+    def apply_styles(self):
+        button_style = """
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+        """
+        button_style_reversed = """
+            QPushButton {
+                background-color: #AF4CAB;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #AF4CAB;
+            }
+        """
+        self.CloseButton.setStyleSheet(button_style_reversed)
+        self.RemoveButton.setStyleSheet(button_style)
+        self.AddUserButton.setStyleSheet(button_style)
+
+        label_style = """
+            font-size: 14px;
+        """
+        self.idLabel.setStyleSheet(label_style)
+        self.nameLabel.setStyleSheet(label_style)
+        self.surnameLabel.setStyleSheet(label_style)
+        self.roleLabel.setStyleSheet(label_style)
+        self.loginLabel.setStyleSheet(label_style)
+
+        list_view_style = """
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            padding: 5px;
+        """
+        self.userListView.setStyleSheet(list_view_style)
+
+        splitter_handle_style = """
+            QSplitter::handle {
+                background-color: #bdc3c7;
+            }
+        """
+        self.splitter.setStyleSheet(splitter_handle_style)
 
     def adjust_splitter(self, pos, index):
         if index == 1:
@@ -94,17 +178,29 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
         self.secondWindow.setupUi(self.doctorMenu)
         self.doctorMenu.show()
 
+    def onAddUserCliced(self):
+        try:
+            QtWidgets.qApp.closeAllWindows()
+            self.addUser = QtWidgets.QMainWindow()
+            self.secondWindow = AddUser.Ui_AddUser()
+            self.secondWindow.setupUi(self.addUser)
+            self.addUser.show()
+        except Exception as e:
+            print(e)
+
     def retranslateUi(self, UserListWindow):
         _translate = QtCore.QCoreApplication.translate
         UserListWindow.setWindowTitle(_translate("UserListWindow", "User List"))
         self.CloseButton.setText(_translate("UserListWindow", "Close"))
+        self.RemoveButton.setText(_translate("UserListWindow", "Remove"))
+        self.AddUserButton.setText(_translate("UserListWindow", "Add New User"))
 
     def loadData(self):
         # Load data from CSV file
-        df = pd.read_csv('Users.csv', delimiter=';')
+        self.df = pd.read_csv('Users.csv', delimiter=';')
 
         # Filter data where role is 1
-        self.df_filtered = df[df['role'] == 1]
+        self.df_filtered = self.df[self.df['role'] == 1]
 
         # Create a model for the QListView
         self.listModel = QtGui.QStandardItemModel()
@@ -127,25 +223,25 @@ class Ui_UserListWindow(QtWidgets.QMainWindow):
             self.roleLabel.setText(f"Role: {row.role}")
             self.loginLabel.setText(f"Login: {row.login}")
 
-            # Font size do momentu aż nie zacznie działać ResizeEvent
-            geometry = self.frameGeometry()
-            new_width = geometry.width()
-            new_height = geometry.height()
-            font_size = max(30, min(new_width, new_height) // 30)
-            print(f"Window resized to {new_width}x{new_height}")
-            print(f"Font size: {font_size}")
+    def remove_selected_user(self):
+        selected_indexes = self.userListView.selectionModel().selectedIndexes()
+        if not selected_indexes:
+            return
 
-            font = QtGui.QFont()
-            font.setPointSize(font_size)
+        index = selected_indexes[0]
+        row = self.listModel.itemFromIndex(index).data()
 
-            self.idLabel.setFont(font)
-            self.nameLabel.setFont(font)
-            self.surnameLabel.setFont(font)
-            self.roleLabel.setFont(font)
-            self.loginLabel.setFont(font)
+        # Remove from the list model
+        self.listModel.removeRow(index.row())
 
-    def on_resize(self, event: QtGui.QResizeEvent):
-        super(Ui_UserListWindow, self).resize(event)
+        # Remove from the dataframe
+        self.df = self.df[self.df['id'] != row.id]
+
+        # Save the updated dataframe back to the CSV file
+        self.df.to_csv('Users.csv', index=False, sep=';')
+
+    def resizeEvent(self, event):
+        super(Ui_UserListWindow, self).resizeEvent(event)
         new_width = self.width()
         new_height = self.height()
         font_size = max(10, min(new_width, new_height) // 30)
