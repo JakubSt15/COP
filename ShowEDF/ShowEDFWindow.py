@@ -56,6 +56,7 @@ class Ui_MainWindow(object):
         self.layout.addWidget(self.CloseButton, 3, 0, 1, 2)
 
         self.channel_map = {}
+        self.setStyles()
 
     def close_window(self):
         QtWidgets.qApp.closeAllWindows()
@@ -82,6 +83,29 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("EDF View", "EDF View"))
         self.menuStrona_G_wna.setTitle(_translate("EDF View", "File"))
         self.actionLoad_File.setText(_translate("EDF View", "Load File"))
+
+    def setStyles(self):
+        # Set button style
+        button_style_reversed = """
+            QPushButton {
+                background-color: #AF4CAB;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 16px;
+                margin: 4px 2px;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: white;
+                color: black;
+                border: 2px solid #AF4CAB;
+            }
+        """
+        self.CloseButton.setStyleSheet(button_style_reversed)
+
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ import logging
 from datetime import datetime
 
 plt.style.use('dark_background')
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import tensorflow as tf
 tf.get_logger().setLevel('FATAL')
@@ -95,7 +95,7 @@ class Ui_MainWindow(object):
         self.StopButton = QtWidgets.QPushButton("Stop", centralwidget)
         self.StopButton.clicked.connect(self.stop_plot)
         self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
-        self.SaveButton.clicked.connect(self.save_to_edf)
+
         self.SaveCSVButton = QtWidgets.QPushButton("Save attack info CSV", centralwidget)
         self.SaveCSVButton.clicked.connect(self.save_csv)
 
@@ -132,6 +132,8 @@ class Ui_MainWindow(object):
     def setup_figure_and_canvas(self, layout, signalPlotHeight):
         if self.raw == None: return
         self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw, self.epilepsy_prediction)
+        self.SaveButton.clicked.connect(self.signalPlot.save_to_edf)
+
         self.signalPlot.plotWidget.setFixedHeight(signalPlotHeight)
 
     def setup_button_layout(self, layout, buttonSize):
@@ -336,26 +338,7 @@ class Ui_MainWindow(object):
         self.CloseButton.setText(translator("MainWindow", "Close"))
         self.StopButton.setText(translator("MainWindow", "Start"))
 
-    def save_to_edf(self):
-        """Saves the buffered EEG data to an EDF file."""
 
-        channel_names = list(self.data_buffers.keys())
-        data_values = np.array(list(self.data_buffers.values()))
-        data_values=data_values[:,0].T
-        info = mne.create_info(
-            ch_names=channel_names,
-            sfreq=self.signalFrequency,
-            ch_types='eeg'
-        )
-        raw = mne.io.RawArray(data_values.T, info)
-
-        options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)", options=options)
-        if file_path:
-            if not file_path.endswith('.edf'):
-                file_path += '.edf'
-            mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
-            show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
 
     def save_csv(self):
         if not self.timeInitialized: return

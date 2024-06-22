@@ -3,7 +3,10 @@ from collections import deque
 from queue import Queue
 import numpy as np
 import threading
+import mne
+from PyQt5.QtWidgets import QFileDialog
 
+from CommonTools.CommonTools import show_popup
 class SignalPlot():
     def __init__(self, layout, channels_to_plot, data, predictorFunction):
 
@@ -148,3 +151,24 @@ class SignalPlot():
             return '#bafc03'
         else:
             return self.colorList[id % len(self.colorList)]
+        
+    def save_to_edf(self):
+        """Saves the buffered EEG data to an EDF file."""
+
+        channel_names = list(self.data_buffers.keys())
+        data_values = np.array(list(self.data_buffers.values()))
+        data_values=data_values.T
+        info = mne.create_info(
+            ch_names=channel_names,
+            sfreq=512,
+            ch_types='eeg'
+        )
+        raw = mne.io.RawArray(data_values.T, info)
+
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)", options=options)
+        if file_path:
+            if not file_path.endswith('.edf'):
+                file_path += '.edf'
+            mne.export.export_raw(file_path, raw, 'edf', overwrite=True)
+            show_popup("Zapisano", f"Plik EDF zapisano w: {file_path}")
