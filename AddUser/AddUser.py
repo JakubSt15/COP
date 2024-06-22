@@ -190,6 +190,7 @@ class Ui_AddUser(object):
         self.UserLastName.clear()
         self.UserLogin.clear()
         self.UserPassword.clear()
+        self.onCloseClicked()
 
     def get_next_user_id(self):
         existing_ids = set()
