@@ -346,25 +346,6 @@ class Ui_MainWindow(object):
             self.followPlot = False
             self.StopButton.setText(_translate("MainWindow", "Start"))
 
-    def fuzzy_channel_matching(self, raw_channel_names):
-        matched_channels = []
-        for channel in raw_channel_names:
-            for std_channel in self.channels_to_plot:
-                if channel.lower() == std_channel.lower():
-                    matched_channels.append(channel)
-                    break
-
-        return matched_channels
-    '''
-        def load_file(self, file_name):
-            if file_name:
-                self.raw = mne.io.read_raw_edf(file_name, preload=True)
-                raw_channel_names = self.raw.ch_names
-                matched_channels = self.fuzzy_channel_matching(raw_channel_names)
-                self.channels_to_plot = matched_channels[:]
-    '''
-
-
     def load_file(self, file_name='./PN00-4.edf'):
         if file_name:
             self.raw = mne.io.read_raw_edf(file_name, preload=True)
