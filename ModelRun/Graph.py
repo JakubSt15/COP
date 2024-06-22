@@ -4,6 +4,7 @@ from queue import Queue
 import numpy as np
 import threading
 
+
 class SignalPlot():
     def __init__(self, layout, channels_to_plot, data, predictorFunction):
 
@@ -15,9 +16,7 @@ class SignalPlot():
         self.maxLen = 5
 
         ''' signalPlotData - przefiltrowane kanały'''
-        self.signalPlotData = self.filter_channels(data, self.channels) # raw EDF file
-        self.yRangeSet = False
-        self.initialYRange = None
+        self.signalPlotData = self.filter_channels(data, self.channels)  # raw EDF file
 
         ''' holders for plotted values '''
         self.currentPlot = {}
@@ -42,15 +41,16 @@ class SignalPlot():
         ''' table helper data structure '''
         self.table_data_buffers = [{'channelName': channel, 'attackProbability': 0} for channel in self.channels]
 
-
     ''' Gets from EDF only these channels that we need '''
+
     def filter_channels(self, data, channels):
         lower_to_original_ch_names = {ch.lower(): ch for ch in data.ch_names}
-        return {ch: data[lower_to_original_ch_names[ch.lower()]] for ch in channels if ch.lower() in lower_to_original_ch_names}
-    
+        return {ch: data[lower_to_original_ch_names[ch.lower()]] for ch in channels if
+                ch.lower() in lower_to_original_ch_names}
+
     def initPlotHandler(self):
         self.plotWidget = pg.GraphicsLayoutWidget()
-        
+
         self.plotHandler = self.plotWidget.addPlot(row=0, col=0)
         self.plotHandler.setXRange(0, self.maxLen, padding=0.1)
         self.plotHandler.showGrid(x=True, y=True)
@@ -58,20 +58,42 @@ class SignalPlot():
 
         labelsGap = 0.045
         labelsXstart = 0.92
-        labelsYstart = 0.85
+        labelsYstart = 0.04
         for i, channel in enumerate(self.channels):
             color = self.colorList[i % len(self.colorList)]
             curve = self.plotHandler.plot(pen=pg.mkPen(color))
             self.curveHandlers.append(curve)
-            
+
             label = pg.LabelItem(channel)
             label.setParentItem(self.plotHandler)
-            label.anchor(itemPos=(0.0, 0.0), parentPos=(labelsXstart, labelsYstart - i*labelsGap))
-
-        self.plotHandler.getAxis('left').setStyle(tickFont=None, showValues=False)
+            label.anchor(itemPos=(0.0, 0.0), parentPos=(labelsXstart, labelsYstart + i * labelsGap))
         self.plotHandler.setMouseEnabled(y=False)
-        self.plotHandler.setDownsampling(True, True, 'subsample')
-        self.plotHandler.setClipToView(True)
+
+    def clear_plot(self, data_times):
+        # Remove old plot item
+        if self.plotHandler:
+            self.plotWidget.removeItem(self.plotHandler)
+
+            # Reset data, create new plot item` and curves
+        self.data_buffers = {ch: [] for ch in self.channels}
+        self.elapsed_time = 0
+        self.source_current_start_idx = 0
+        self.source_current_end_idx = data_times
+        self.temp = [0] * len(self.channels)
+        self.currentSample = 0
+        self.timeDeq.clear()
+
+        self.plotHandler = self.plotWidget.addPlot(row=0, col=0)
+        self.plotHandler.setXRange(0, self.maxLen, padding=0.1)
+        self.plotHandler.showGrid(x=True, y=True)
+        self.plotHandler.setLabel('bottom', 'Time (s)')
+        self.curveHandlers = []  # Reset curve handlers
+
+        for i in range(self.numberOfChannels):
+            color = self.colorList[i % len(self.colorList)]
+            curve = self.plotHandler.plot(pen=pg.mkPen(color))
+            self.curveHandlers.append(curve)
+            self.dat[i].clear()
 
     def update(self, followPlot=True):
         ''' signal - Y axis, time - X axis'''
@@ -84,54 +106,43 @@ class SignalPlot():
 
         ''' Update plots '''
         for i, channel in enumerate(self.channels):
-            
             new_data = self.signalPlotData[channel]
             dataX = new_data[0][0]
             timeY = new_data[1]
-            
+
             self.dat[i].append(dataX[plotSamplNumber] + (i * self.plotGap))
 
             self.curveHandlers[i].setData(self.timeDeq, self.dat[i])
-            
-            
-
 
         ''' performing prediction every second '''
         if currentRecordTime > self.startPredictingSampleSecond and currentRecordTime - self.lastRecordSecond > 1:
             self.lastRecordSecond = currentRecordTime
             for i, channel in enumerate(self.channels):
-                self.data_buffers[channel] = self.signalPlotData[channel][0][0][plotSamplNumber-512:plotSamplNumber]
-            
+                self.data_buffers[channel] = self.signalPlotData[channel][0][0][plotSamplNumber - 512:plotSamplNumber]
+
             values_list = np.array(list(self.data_buffers.values()))
             prediction = self.predict(values_list.T, predictProba=self.modelPredictsProbability)
-        
+
             ''' out of (n, 19) calculates (1, 19) vector with mean probability for attack for whole second'''
             attackMeanProba = np.mean(prediction, axis=0)
             self.updatePlotColors(attackMeanProba)
-            
+
         self.currentSample += 1
         current_time = self.timeDeq[-1]
         if current_time > self.maxLen and followPlot:
             self.plotHandler.setXRange(current_time - self.maxLen, current_time, padding=0.1)
 
-            if not self.yRangeSet:
-                self.initialYRange = self.plotHandler.getViewBox().viewRange()[1]
-                self.yRangeSet = True
-            else:
-                self.plotHandler.setYRange(*self.initialYRange, padding=0)
-                self.plotHandler.setXRange(current_time - self.maxLen, current_time, padding=0.1)
-
-
         return attackMeanProba
 
     def predict(self, data, predictProba=False):
         return self.predictAttack(data, 512, predictProba=predictProba)
-    
+
     ''' predictions is a (n, 19) element vector of prorbabilites for attack on each channel'''
+
     def updatePlotColors(self, predictions):
         for i in range(self.numberOfChannels):
-                color = self._getColorBasedOnPrediction(predictions[i], i)
-                self.curveHandlers[i].setPen(pg.mkPen(color))
+            color = self._getColorBasedOnPrediction(predictions[i], i)
+            self.curveHandlers[i].setPen(pg.mkPen(color))
 
     def _getColorBasedOnPrediction(self, prediction, id):
         if prediction > 0.9:
