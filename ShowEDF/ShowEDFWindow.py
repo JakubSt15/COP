@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
 from datetime import timedelta
-
+from ShowEDF.Graph import SignalPlot
 from DoctorMenu import DoctorMenuList
 
 plt.style.use('dark_background')
@@ -52,27 +52,9 @@ class Ui_MainWindow(object):
                                  'eeg fp2', 'eeg f4', 'eeg c4', 'eeg p4',
                                  'eeg o2', 'eeg f8', 'eeg t4', 'eeg t6']
 
-        self.figure, self.axes = plt.subplots(len(self.channels_to_plot), 1, sharex=True, figsize=(10, 20))
-        plt.subplots_adjust(bottom=0.05, left=0.005, top=0.95)
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar2QT(self.canvas, MainWindow)
-
-        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setRange(0, 100)
-        self.slider.setValue(0)
-        self.slider.sliderReleased.connect(self.update_plot)
-
         self.layout = QtWidgets.QGridLayout(self.centralwidget)
-        self.layout.addWidget(self.toolbar, 0, 0, 1, 2)
-        self.layout.addWidget(self.canvas, 1, 0, 1, 2)
-        self.layout.addWidget(self.slider, 2, 0, 1, 2)
         self.layout.addWidget(self.CloseButton, 3, 0, 1, 2)
 
-        self.layout.setRowStretch(1, 1)
-        self.layout.setRowStretch(2, 1)
-
-        self.initial_range = 20000
-        self.current_start_idx = 0
         self.channel_map = {}
 
     def close_window(self):
@@ -90,40 +72,10 @@ class Ui_MainWindow(object):
 
         if file_name:
             self.raw = mne.io.read_raw_edf(file_name, preload=True)
-            self.n_samples = len(self.raw.times)
-            self.current_end_idx = min(self.n_samples, self.initial_range)
-            self.slider.setRange(0, self.n_samples - self.initial_range)
+            self.show_plot()
 
-            # Create a mapping from normalized channel names to original names
-            self.channel_map = {ch.lower(): ch for ch in self.raw.ch_names}
-            self.update_plot()
-
-    def update_plot(self):
-        slider_value = self.slider.value()
-        self.current_start_idx = slider_value
-        self.current_end_idx = min(self.n_samples, self.current_start_idx + self.initial_range)
-
-        for ax in self.axes:
-            ax.clear()
-
-        cmap = plt.get_cmap('tab20')
-        colors = [cmap(i) for i in range(len(self.channels_to_plot))]
-
-        for i, channel in enumerate(self.channels_to_plot):
-            original_channel = self.channel_map.get(channel)
-            if original_channel is not None:
-                data, times = self.raw[original_channel, self.current_start_idx:self.current_end_idx]
-                self.axes[i].plot(times, data[0], label=original_channel, color=colors[i])
-                self.axes[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-                self.axes[i].set_yticklabels([])
-                self.axes[i].spines['bottom'].set_visible(False)
-                self.axes[i].spines['right'].set_visible(False)
-                self.axes[i].spines['left'].set_visible(False)
-
-        self.axes[-1].set_xlabel('Time')
-        self.axes[-1].set_xticklabels(
-            [str(timedelta(seconds=int(sec))) for sec in self.raw.times[self.current_start_idx:self.current_end_idx]])
-        self.canvas.draw()
+    def show_plot(self):
+        self.signalPlot = SignalPlot(self.layout, self.raw, self.channels_to_plot)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

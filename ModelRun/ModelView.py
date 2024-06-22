@@ -252,6 +252,7 @@ class Ui_MainWindow(object):
 
     def close_window(self):
         QtWidgets.qApp.closeAllWindows()
+        self.timer.stop()
         self.doctorMenu = QtWidgets.QMainWindow()
         self.secondWindow = DoctorMenuList.Ui_MainWindow()
         self.secondWindow.setupUi(self.doctorMenu)
@@ -370,11 +371,11 @@ class Ui_MainWindow(object):
     def setStartRecordTime(self):
         if self.timeInitialized == True: return
         self.timeInitialized = True
-        self.startTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        self.startTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     def setEndRecordTime(self):
         if self.timeInitialized == False: return
-        self.endTime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        self.endTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.timeInitialized = False
 
 if __name__ == "__main__":

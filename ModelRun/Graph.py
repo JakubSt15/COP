@@ -16,7 +16,9 @@ class SignalPlot():
 
         ''' signalPlotData - przefiltrowane kanały'''
         self.signalPlotData = self.filter_channels(data, self.channels) # raw EDF file
-        
+        self.yRangeSet = False
+        self.initialYRange = None
+
         ''' holders for plotted values '''
         self.currentPlot = {}
         self.q = [Queue() for i in range(self.numberOfChannels)]
@@ -40,6 +42,7 @@ class SignalPlot():
         ''' table helper data structure '''
         self.table_data_buffers = [{'channelName': channel, 'attackProbability': 0} for channel in self.channels]
 
+
     ''' Gets from EDF only these channels that we need '''
     def filter_channels(self, data, channels):
         lower_to_original_ch_names = {ch.lower(): ch for ch in data.ch_names}
@@ -55,7 +58,7 @@ class SignalPlot():
 
         labelsGap = 0.045
         labelsXstart = 0.92
-        labelsYstart = 0.04
+        labelsYstart = 0.85
         for i, channel in enumerate(self.channels):
             color = self.colorList[i % len(self.colorList)]
             curve = self.plotHandler.plot(pen=pg.mkPen(color))
@@ -63,9 +66,12 @@ class SignalPlot():
             
             label = pg.LabelItem(channel)
             label.setParentItem(self.plotHandler)
-            label.anchor(itemPos=(0.0, 0.0), parentPos=(labelsXstart, labelsYstart + i*labelsGap))
-        self.plotHandler.setMouseEnabled(y=False)
+            label.anchor(itemPos=(0.0, 0.0), parentPos=(labelsXstart, labelsYstart - i*labelsGap))
 
+        self.plotHandler.getAxis('left').setStyle(tickFont=None, showValues=False)
+        self.plotHandler.setMouseEnabled(y=False)
+        self.plotHandler.setDownsampling(True, True, 'subsample')
+        self.plotHandler.setClipToView(True)
 
     def update(self, followPlot=True):
         ''' signal - Y axis, time - X axis'''
@@ -107,6 +113,14 @@ class SignalPlot():
         current_time = self.timeDeq[-1]
         if current_time > self.maxLen and followPlot:
             self.plotHandler.setXRange(current_time - self.maxLen, current_time, padding=0.1)
+
+            if not self.yRangeSet:
+                self.initialYRange = self.plotHandler.getViewBox().viewRange()[1]
+                self.yRangeSet = True
+            else:
+                self.plotHandler.setYRange(*self.initialYRange, padding=0)
+                self.plotHandler.setXRange(current_time - self.maxLen, current_time, padding=0.1)
+
 
         return attackMeanProba
 
