@@ -365,6 +365,7 @@ class Ui_MainWindow(object):
             writer = csv.writer(file)
             writer.writerow(columns)
             writer.writerows(self.predictionsBuffer)
+        show_popup("Saved", f"Report saved in : {filename}", QtWidgets.QMessageBox.Information)
 
     def setStartRecordTime(self):
         if self.timeInitialized == True: return
