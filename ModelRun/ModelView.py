@@ -21,7 +21,7 @@ import logging
 from datetime import datetime
 
 plt.style.use('dark_background')
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  
+
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import tensorflow as tf
 
@@ -124,7 +124,7 @@ class Ui_MainWindow(object):
         self.StopButton.clicked.connect(self.stop_plot)
 
         self.SaveButton = QtWidgets.QPushButton("Save to EDF", centralwidget)
-
+        self.SaveButton.clicked.connect(self.save_to_edf)
 
         self.ChooseButton = QtWidgets.QPushButton("Pick EDF", centralwidget)
         self.ChooseButton.clicked.connect(self.change_edf)
@@ -165,8 +165,6 @@ class Ui_MainWindow(object):
         if self.raw == None: return
         self.signalPlot = SignalPlot(layout, self.channels_to_plot, self.raw, self.epilepsy_prediction)
         layout.insertWidget(0, self.signalPlot.plotWidget)
-        self.SaveButton.clicked.connect(self.signalPlot.save_to_edf)
-
         self.signalPlot.plotWidget.setFixedHeight(signalPlotHeight)
 
     def setup_button_layout(self, layout, buttonSize):
@@ -457,10 +455,12 @@ class Ui_MainWindow(object):
         if not self.timeInitialized: return
         self.setEndRecordTime()
         columns = self.channels_to_plot
-        with open(f'SavedRecords/{self.startTime}--{self.endTime}.csv', 'w', newline='') as file:
+        filename = f'SavedRecords/{self.startTime.replace(":", "_")}--{self.endTime.replace(":", "_")}.csv'
+        with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(columns)
             writer.writerows(self.predictionsBuffer)
+        show_popup("Saved", f"Report saved in : {filename}", QtWidgets.QMessageBox.Information)
 
     def setStartRecordTime(self):
         if self.timeInitialized == True: return
