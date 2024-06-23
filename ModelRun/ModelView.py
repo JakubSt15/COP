@@ -415,6 +415,13 @@ class Ui_MainWindow(object):
         layout = self.centralwidget.layout()
         self.setup_figure_and_canvas(layout, signalPlotHeight)
 
+        # Clear the predictions buffer
+        self.clear_prediction_buffer()
+
+    def clear_prediction_buffer(self):
+        """Clears the buffer holding previous predictions."""
+        self.predictionsBuffer = []
+
     def change_edf(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -426,17 +433,6 @@ class Ui_MainWindow(object):
             self.reset_plot()
             self.StopButton.setText("Start")
             self.isPlotting = False
-
-    def save_csv(self):
-        if not self.timeInitialized: return
-        self.setEndRecordTime()
-        columns = self.channels_to_plot
-        filename = f'SavedRecords/{self.startTime.replace(":", "_")}--{self.endTime.replace(":", "_")}.csv'
-        with open(filename, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(columns)
-            writer.writerows(self.predictionsBuffer)
-        show_popup("Saved", f"Report saved in : {filename}", QtWidgets.QMessageBox.Information)
     
     def generate_pdf_report(self):
         login,name, surname, _ = self.readLoggedUser()
