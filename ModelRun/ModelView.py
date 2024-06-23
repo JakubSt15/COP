@@ -263,10 +263,16 @@ class Ui_MainWindow(object):
             validation_predictions = validation_logits
             if not predictProba: validation_predictions = torch.round(validation_logits)
 
+        print(validation_predictions)
         start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=100)
 
         if start_sample is None or end_sample is None:
-            ret = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            ret = [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                ]
             self.predictionsBuffer.append(ret)
             return ret
 
