@@ -54,12 +54,17 @@ class SignalPlot():
 
     def save_to_edf(self):
         """Saves the buffered EEG data to an EDF file."""
-
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)",
+                                                   options=options)
         channel_names = list(self.data_buffers.keys())
         data_values=[]
         for i, channel in enumerate(self.channels):
-                data_values.append(self.signalPlotData[channel][0][0])
+                temp = np.array(self.signalPlotData[channel][0][0])
+                data_values.append(temp[:self.currentSample * self.plottedDecimation])
         data_values = np.array(data_values)
+        last_sample=(self.currentSample * self.plottedDecimation)-(self.currentSample * self.plottedDecimation)%512
+        data_values=data_values[:,:last_sample]
         info = mne.create_info(
             ch_names=channel_names,
             sfreq=512,
@@ -67,9 +72,7 @@ class SignalPlot():
         )
         raw = mne.io.RawArray(data_values, info)
 
-        options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getSaveFileName(None, "Wybierz nazwę pliku", "", "EDF Files (*.edf)",
-                                                   options=options)
+
         if file_path:
             if not file_path.endswith('.edf'):
                 file_path += '.edf'
