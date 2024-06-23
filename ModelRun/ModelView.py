@@ -144,7 +144,7 @@ class Ui_MainWindow(object):
         self.ChooseButton = QtWidgets.QPushButton("Pick EDF", centralwidget)
         self.ChooseButton.clicked.connect(self.change_edf)
 
-        self.SaveCSVButton = QtWidgets.QPushButton("Save attack info CSV", centralwidget)
+        self.SaveCSVButton = QtWidgets.QPushButton("Save attack info PDF", centralwidget)
         self.SaveCSVButton.clicked.connect(self.generate_pdf_report)
 
 
