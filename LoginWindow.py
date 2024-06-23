@@ -63,7 +63,7 @@ class Ui_LoginWindow(object):
 
             for user in users:
                 if user[4] == login and user[5] == password:
-                    show_popup("Sukces", f"Zalogowano użytkownika {user[1]} {user[2]} ({user[3]})", QMessageBox.Information)
+                    show_popup("Sukces", f"Zalogowano użytkownika {user[1]} {user[2]}", QMessageBox.Information)
                     self.createLoggedUser(login, user[1], user[2], user[3])
                     return True
 
