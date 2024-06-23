@@ -252,11 +252,11 @@ def get_attack_sample_from_predictions(predictions, FRAME_SIZE=1000):
     start_sample, end_sample = None, None
 
     for id, pred in enumerate(predictions):
-        if pred == 1 and looking_for_start:
+        if pred > 0.1 and looking_for_start:
             start_sample = id * FRAME_SIZE
             looking_for_start = False
             looking_for_end = True
-        if pred == 0 and looking_for_end:
+        if pred < 0.1 and looking_for_end:
             end_sample = id * FRAME_SIZE
             break
     
