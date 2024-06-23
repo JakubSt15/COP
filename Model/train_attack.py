@@ -9,12 +9,8 @@ class AttackModel(nn.Module):
     def __init__(self):
         super(AttackModel, self).__init__()
         self.model = nn.Sequential( 
-            nn.Linear(19, 50),
+            nn.Linear(19, 32),
             nn.Dropout(0.01),
-            nn.Sigmoid(),
-            nn.Linear(50, 120),
-            nn.Sigmoid(),
-            nn.Linear(120, 32),
             nn.Sigmoid(),
             nn.Linear(32, 1),
             nn.Sigmoid()
