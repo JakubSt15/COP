@@ -15,6 +15,7 @@ from DoctorMenu import DoctorMenuList
 from Model.prepare_data import prepare_dataset_attack_model, get_attack_sample_from_predictions, \
     prepare_prediction_multi_channel_datasets
 from Model.train_attack import AttackModel, MultiChannelAttackModel
+from Model.datarefiner import DataRefiner
 from ModelRun.Graph import SignalPlot
 from ModelRun.Table import GuiAttackTable
 from ModelRun.PredictionPlots import PredictionPlots
@@ -63,7 +64,8 @@ class Ui_MainWindow(object):
         self.startTime = None
         self.endTime = None
         self.predictionsBuffer = []
-
+        self.refiner = DataRefiner()
+        
     def setup_initial_values(self):
         mne.set_log_level('CRITICAL')
         self.isPlotting = False
@@ -237,9 +239,14 @@ class Ui_MainWindow(object):
         layout.addLayout(doublePlotContainer)
 
     def epilepsy_prediction(self, data, frequency, predictProba=False):
+
         model_predykcja = tf.keras.models.load_model('./Model/model.keras')
-        attack = prepare_dataset_attack_model(data, plot_verbose=False)
-        a = np.array(attack)
+
+
+        # attack = prepare_dataset_attack_model(data, plot_verbose=False)
+        attack = self.refiner.refine(data.T)
+
+        a = np.array(attack.T.tolist())
         a = a[np.newaxis, :4]
         logging.getLogger("absl").setLevel(logging.ERROR)
         y = model_predykcja.predict(a, verbose=0)
@@ -313,6 +320,7 @@ class Ui_MainWindow(object):
         self.secondWindow = DoctorMenuList.Ui_MainWindow()
         self.secondWindow.setupUi(self.doctorMenu)
         self.doctorMenu.show()
+        self.timer.stop()
 
     def apply_styles(self):
         button_style = """
