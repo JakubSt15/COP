@@ -4,17 +4,14 @@ from torch import nn
 from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 class AttackModel(nn.Module):
     def __init__(self):
         super(AttackModel, self).__init__()
         self.model = nn.Sequential( 
-            nn.Linear(19, 50),
+            nn.Linear(19, 32),
             nn.Dropout(0.01),
-            nn.Sigmoid(),
-            nn.Linear(50, 120),
-            nn.Sigmoid(),
-            nn.Linear(120, 32),
             nn.Sigmoid(),
             nn.Linear(32, 1),
             nn.Sigmoid()
@@ -24,7 +21,7 @@ class AttackModel(nn.Module):
         return self.model(x)
 
 class AttackTrainer:
-    def __init__(self, data, epochs=7000, learning_rate=0.1, dropout=0.18, test_size=0.2, model_save_path='./model_pytorch/attack_model_pyTorch.pth'):
+    def __init__(self, data, epochs=10000, learning_rate=0.6, dropout=0.18, test_size=0.2, model_save_path='./model_pytorch/attack_model_pyTorch.pth'):
         self.data = data
         self.epochs = epochs
         self.learning_rate = learning_rate
@@ -39,7 +36,9 @@ class AttackTrainer:
 
     def fit_attack(self, validation_split=0.2, plot_loss=False):
         # Splitting data into train and validation sets
-        attributes, labels = prepare_dataset_attack_model(self.data, shuffle=True, plot_verbose=False)
+        attributes, labels = prepare_dataset_attack_model(self.data, shuffle=False, plot_verbose=False)
+        pd.DataFrame(attributes).to_csv('ATRYBUTY.csv', index=False, header=False)
+        
         split_index = int(len(attributes) * (1 - validation_split))
         train_attributes, val_attributes = attributes[:split_index], attributes[split_index:]
         train_labels, val_labels = labels[:split_index], labels[split_index:]

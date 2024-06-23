@@ -9,6 +9,9 @@ from scipy.interpolate import interp1d
 
 
 FRAME_SIZE = 100
+ROLLINGN = 100
+
+
 plt.style.use("Solarize_Light2")
 def plot_signal(signal, title=None):
     plt.plot(signal)
@@ -37,7 +40,7 @@ def unchannel_attack_labels(labels_channeled):
     and automatically sets the label for the whole frame. So basically
     reduces array size to LABELS // frame_size 
 '''
-def set_framed_labels(labels, frame_size, rollingN=0):
+def set_framed_labels(labels, frame_size, rollingN=ROLLINGN):
     labels = labels[rollingN:]
     num_frames = len(labels) // frame_size
     labels_framed = []
@@ -62,7 +65,7 @@ def calculate_power(signal):
 '''
     This function returns a list of signal power on each channel on each frame.
 '''
-def set_labels_signal_power_by_frames(signal, frame_size, rollingN=0):
+def set_labels_signal_power_by_frames(signal, frame_size, rollingN=ROLLINGN):
     signal = signal[rollingN:]
     num_frames = len(signal) // frame_size
     power_framed = []
@@ -99,7 +102,7 @@ def remove_outliers_by_median(series, window_size=100):
     df - should be not transposed
     plot_verbose - If you want to plot each part of processing
 '''
-def process_attribute_channels(df, plot_verbose=False, rollingN=1500):
+def process_attribute_channels(df, plot_verbose=False, rollingN=ROLLINGN):
     PROCESSED_CHANNELS = []
     for id, column in enumerate(df.T):
         if plot_verbose: plot_signal(column, title=f"Raw signal");
@@ -139,7 +142,7 @@ def process_attribute_channels(df, plot_verbose=False, rollingN=1500):
 '''
 def prepare_dataset_attack_model(data_csv, shuffle=False, plot_verbose=False):
     attributes, labels = [], []
-    ROLLING_N = 100
+    ROLLING_N = ROLLINGN
 
     for f in data_csv:
         signal_csv, labels_csv = f[0], f[1]
