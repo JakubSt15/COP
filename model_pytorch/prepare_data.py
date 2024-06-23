@@ -104,7 +104,6 @@ def process_attribute_channels(df, plot_verbose=False, rollingN=1500):
     for id, column in enumerate(df.T):
         if plot_verbose: plot_signal(column, title=f"Raw signal");
         
-        print(df.shape)
         # Filtrowanie atrybutów
         column = filtfilt(*butter(5, [3, 13], btype='band', fs=512), column )
         if plot_verbose: plot_signal(column, title=f"Butter filtered signal [3 13]");
@@ -140,7 +139,7 @@ def process_attribute_channels(df, plot_verbose=False, rollingN=1500):
 '''
 def prepare_dataset_attack_model(data_csv, shuffle=False, plot_verbose=False):
     attributes, labels = [], []
-    ROLLING_N = 1500
+    ROLLING_N = 100
 
     for f in data_csv:
         signal_csv, labels_csv = f[0], f[1]
@@ -150,9 +149,7 @@ def prepare_dataset_attack_model(data_csv, shuffle=False, plot_verbose=False):
         labels_framed = set_framed_labels(labels_unframed, FRAME_SIZE, rollingN=ROLLING_N)   # shape (samples) -> (samples//FRAME_SIZE)
 
         PROCESSED_CHANNELS = process_attribute_channels(attr_df, plot_verbose=plot_verbose, rollingN=ROLLING_N)
-        print(len(PROCESSED_CHANNELS))
         power_attributes = set_labels_signal_power_by_frames(PROCESSED_CHANNELS, FRAME_SIZE, rollingN=ROLLING_N)
-        print(len(power_attributes))
         attributes += power_attributes
         labels += labels_framed
 
@@ -315,7 +312,7 @@ def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast
             print(f'\tCurrent file: {id}')
             attr_df = df
 
-            attributes_raw = get_one_channel_train_data(attr_df, None, i)
+            attributes_raw, _ = get_one_channel_train_data(attr_df, None, i)
             _attr = attr_df
 
             if not fast:
@@ -338,7 +335,8 @@ def prepare_prediction_multi_channel_datasets(data_csv, plot_verbose=False, fast
 def get_attack_sample_from_predictions(predictions, FRAME_SIZE=1000):
     looking_for_start = True
     looking_for_end = False
-    
+    start_sample = None
+    end_sample = None
     for id, pred in enumerate(predictions):
         if pred == 1 and looking_for_start:
             start_sample = id * FRAME_SIZE

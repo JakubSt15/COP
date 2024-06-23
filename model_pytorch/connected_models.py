@@ -20,9 +20,7 @@ attack = pd.read_csv(data[0][0])
 attack, _ = prepare_dataset_attack_model(data, plot_verbose=False)
 a=np.array(attack)
 a=a[np.newaxis,:4]
-print(a.shape)
 print(a)
-input()
 y=model_predykcja.predict(a)
 
 
@@ -42,6 +40,7 @@ with torch.no_grad():
     validation_logits = loaded_model(validation_attributes).squeeze()
     validation_predictions = torch.round(validation_logits)
 
+print(validation_predictions)
 start_sample, end_sample = get_attack_sample_from_predictions(validation_predictions, FRAME_SIZE=1000)
 attr_df = pd.read_csv(data[0][0], header=None)[start_sample:end_sample]
 
@@ -51,7 +50,6 @@ visualize_predicted_attack(y[0], validation_predictions)
 '''
     Multi channel
 '''
-
 validation_data = prepare_prediction_multi_channel_datasets(attr_df, plot_verbose=False, rollingN=10)
 channel = 5
 

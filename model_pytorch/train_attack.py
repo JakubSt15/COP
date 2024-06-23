@@ -24,7 +24,7 @@ class AttackModel(nn.Module):
         return self.model(x)
 
 class AttackTrainer:
-    def __init__(self, data, epochs=50000, learning_rate=0.5, dropout=0.18, test_size=0.2, model_save_path='./model_pytorch/attack_model_pyTorch.pth'):
+    def __init__(self, data, epochs=7000, learning_rate=0.1, dropout=0.18, test_size=0.2, model_save_path='./model_pytorch/attack_model_pyTorch.pth'):
         self.data = data
         self.epochs = epochs
         self.learning_rate = learning_rate
@@ -184,8 +184,8 @@ data_multi =  [
     ['./model_pytorch/records/2_training_record.csv', './model_pytorch/labels_multi/mask_attack_2.csv'],
     # ['./model_pytorch/records/4_training_record.csv', './model_pytorch/labels_multi/mask_attack_4.csv']
 ]
-trainer = AttackTrainer(data)
-model = trainer.fit_attack(plot_loss=True)  
+# trainer = AttackTrainer(data)
+# model = trainer.fit_attack(plot_loss=True)  
 
 # attributes, labels = prepare_dataset_attack_model(data, shuffle=False, plot_verbose=True)
 
