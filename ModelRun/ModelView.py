@@ -356,11 +356,11 @@ class Ui_MainWindow(object):
             self.followPlot = True
             self.timer.start()
             self.setStartRecordTime()
-            self.StopButton.setText(_translate("MainWindow", "Stop"))
+            self.StopButton.setText(_translate("MainWindow", "Unfollow"))
         else:
             self.isPlotting = False
             self.followPlot = False
-            self.StopButton.setText(_translate("MainWindow", "Start"))
+            self.StopButton.setText(_translate("MainWindow", "Follow"))
 
     def load_file(self, file_name='./PN00-4.edf'):
         if file_name:
