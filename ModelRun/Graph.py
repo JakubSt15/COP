@@ -29,7 +29,7 @@ class SignalPlot():
         self.timeDeq = deque()
         self.plotHandler = None
         self.curveHandlers = []
-        self.currentSample = 0
+        self.currentSample = 1076224//10//2 + (512*25) # przenosi do 21:40 min
         self.plottedDecimation = 10
         self.initPlotHandler()
         layout.addWidget(self.plotWidget)
