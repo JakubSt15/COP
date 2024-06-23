@@ -59,3 +59,7 @@ class SignalPlot():
             self.plotHandler.setDownsampling(True, True, 'subsample')
             self.plotHandler.getAxis('left').setStyle(tickFont=None, showValues=False)
             self.plotHandler.setClipToView(True)
+
+    def close_plots(self, layout):
+        layout.removeWidget(self.plotWidget)
+        self.plotWidget.close()

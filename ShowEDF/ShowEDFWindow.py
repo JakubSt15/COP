@@ -15,6 +15,7 @@ plt.style.use('dark_background')
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+        mne.set_log_level('CRITICAL')
         MainWindow.setObjectName("EDF View")
         MainWindow.resize(946, 578)
 
@@ -22,22 +23,13 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         MainWindow.setCentralWidget(self.centralwidget)
 
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 946, 26))
-        self.menubar.setObjectName("menubar")
-        self.menuStrona_G_wna = QtWidgets.QMenu(self.menubar)
-        self.menuStrona_G_wna.setObjectName("menuStrona_G_wna")
-        MainWindow.setMenuBar(self.menubar)
+        # Create Button Load File
+        self.LoadFileButton = QtWidgets.QPushButton("Load File", self.centralwidget)
+        self.LoadFileButton.clicked.connect(self.load_file)
 
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-
-        self.actionLoad_File = QtWidgets.QAction(MainWindow)
-        self.actionLoad_File.setObjectName("actionLoad_File")
-        self.menuStrona_G_wna.addAction(self.actionLoad_File)
-        self.menubar.addAction(self.menuStrona_G_wna.menuAction())
-        self.actionLoad_File.triggered.connect(self.load_file)
+        # Create Button Close All plots
+        self.ClosePlotsButton = QtWidgets.QPushButton("Close All Plots", self.centralwidget)
+        self.ClosePlotsButton.clicked.connect(self.close_plots)
 
         # Create buttons without setting geometry
         self.CloseButton = QtWidgets.QPushButton("Close", self.centralwidget)
@@ -53,10 +45,20 @@ class Ui_MainWindow(object):
                                  'eeg o2', 'eeg f8', 'eeg t4', 'eeg t6']
 
         self.layout = QtWidgets.QGridLayout(self.centralwidget)
-        self.layout.addWidget(self.CloseButton, 3, 0, 1, 2)
+        self.layout.addWidget(self.LoadFileButton, 2, 0, 1, 1)
+        self.layout.addWidget(self.ClosePlotsButton, 3, 0, 1, 1)
+        self.layout.addWidget(self.CloseButton, 4, 0, 1, 1)
 
         self.channel_map = {}
         self.setStyles()
+
+    def close_plots(self):
+        for i in reversed(range(self.layout.count())):
+            widget = self.layout.itemAt(i).widget()
+            if widget and isinstance(widget, QtWidgets.QPushButton):
+                continue  # Nie usuwaj przycisków
+            else:
+                self.layout.itemAt(i).widget().setParent(None)
 
     def close_window(self):
         QtWidgets.qApp.closeAllWindows()
@@ -81,8 +83,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("EDF View", "EDF View"))
-        self.menuStrona_G_wna.setTitle(_translate("EDF View", "File"))
-        self.actionLoad_File.setText(_translate("EDF View", "Load File"))
 
     def setStyles(self):
         # Set button style
@@ -104,7 +104,27 @@ class Ui_MainWindow(object):
                 border: 2px solid #AF4CAB;
             }
         """
+        button_style = """
+                    QPushButton {
+                        background-color: #4CAF50;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        text-align: center;
+                        text-decoration: none;
+                        font-size: 16px;
+                        margin: 4px 2px;
+                        border-radius: 12px;
+                    }
+                    QPushButton:hover {
+                        background-color: white;
+                        color: black;
+                        border: 2px solid #4CAF50;
+                    }
+                """
         self.CloseButton.setStyleSheet(button_style_reversed)
+        self.LoadFileButton.setStyleSheet(button_style)
+        self.ClosePlotsButton.setStyleSheet(button_style)
 
 
 
