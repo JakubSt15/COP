@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter, butter, filtfilt, decimate
 from sklearn.preprocessing import MinMaxScaler
 from scipy.interpolate import interp1d
-
+from datarefiner import DataRefiner
 
 FRAME_SIZE = 100
 ROLLINGN = 100
@@ -144,16 +144,22 @@ def prepare_dataset_attack_model(data_csv, shuffle=False, plot_verbose=False):
     attributes, labels = [], []
     ROLLING_N = ROLLINGN
 
+    REFINER = DataRefiner()
+
     for f in data_csv:
         signal_csv, labels_csv = f[0], f[1]
         attr_df = pd.read_csv(signal_csv).to_numpy()
         labels_df = pd.read_csv(labels_csv).to_numpy()
-        labels_unframed = unchannel_attack_labels(labels_df)             # shape (samples, channels) -> (samples)
-        labels_framed = set_framed_labels(labels_unframed, FRAME_SIZE, rollingN=ROLLING_N)   # shape (samples) -> (samples//FRAME_SIZE)
-
-        PROCESSED_CHANNELS = process_attribute_channels(attr_df, plot_verbose=plot_verbose, rollingN=ROLLING_N)
-        power_attributes = set_labels_signal_power_by_frames(PROCESSED_CHANNELS, FRAME_SIZE, rollingN=ROLLING_N)
-        attributes += power_attributes
+        labels_unframed = unchannel_attack_labels(labels_df)
+        labels_framed = labels_unframed[::128]    
+        # labels_framed = set_framed_labels(labels_unframed, FRAME_SIZE, rollingN=ROLLING_N)   # shape (samples) -> (samples//FRAME_SIZE)
+        
+        print("INPUT SHAPE: ", attr_df.shape)
+        power_attributes = REFINER.refine(attr_df.T)
+        print("OUTPUTSHAPE: ", power_attributes.shape)
+        # PROCESSED_CHANNELS = process_attribute_channels(attr_df, plot_verbose=plot_verbose, rollingN=ROLLING_N)
+        # power_attributes = set_labels_signal_power_by_frames(PROCESSED_CHANNELS, FRAME_SIZE, rollingN=ROLLING_N)
+        attributes += power_attributes.T.tolist()
         labels += labels_framed
 
     if shuffle:
@@ -161,7 +167,8 @@ def prepare_dataset_attack_model(data_csv, shuffle=False, plot_verbose=False):
         random.shuffle(combined_data)
         attributes, labels = zip(*combined_data)
     
-    print(type(attributes))
+    print(len(attributes))
+    print(len(labels))
     return attributes, labels
 
 
