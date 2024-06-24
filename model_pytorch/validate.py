@@ -19,6 +19,11 @@ validation_attributes = torch.tensor(validation_attributes, dtype=torch.float32)
 validation_labels = torch.tensor(validation_labels, dtype=torch.float32)
 validation_logits = None
 
+print(validation_attributes.shape)
+vector = torch.linspace(-1, 1, 560)
+validation_attributes = vector.unsqueeze(1).repeat(1, 19)
+print(validation_attributes.shape)
+input()
 with torch.no_grad():
     loaded_model.eval()
     validation_logits = loaded_model(validation_attributes).squeeze()
