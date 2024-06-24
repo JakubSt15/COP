@@ -10,7 +10,6 @@ class AttackModel(nn.Module):
         super(AttackModel, self).__init__()
         self.model = nn.Sequential( 
             nn.Linear(19, 1),
-            nn.BatchNorm1d(1),
             nn.Dropout(0.01),
             nn.Sigmoid()
         )
@@ -172,8 +171,8 @@ data_multi =  [
     ['./model_pytorch/records/2_training_record.csv', './model_pytorch/labels_multi/mask_attack_2.csv'],
     # ['./model_pytorch/records/4_training_record.csv', './model_pytorch/labels_multi/mask_attack_4.csv']
 ]
-# trainer = AttackTrainer(data)
-# model = trainer.fit_attack(plot_loss=True)  
+trainer = AttackTrainer(data)
+model = trainer.fit_attack(plot_loss=True)  
 
 # attributes, labels = prepare_dataset_attack_model(data, shuffle=False, plot_verbose=True)
 
