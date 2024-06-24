@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from fpdf import FPDF
 from datetime import datetime
 import tempfile
-
+from sklearn.preprocessing import MinMaxScaler
 plt.style.use('dark_background')
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
@@ -243,14 +243,13 @@ class Ui_MainWindow(object):
         model_predykcja = tf.keras.models.load_model('./Model/model.keras')
 
 
-        # attack = prepare_dataset_attack_model(data, plot_verbose=False)
-        attack = self.refiner.refine(data.T)
+        attack = prepare_dataset_attack_model(data, plot_verbose=False)
+        # attack = self.refiner.refine(data.T)
 
-        a = np.array(attack.T.tolist())
+        a = np.array(attack)
         a = a[np.newaxis, :4]
         logging.getLogger("absl").setLevel(logging.ERROR)
         y = model_predykcja.predict(a, verbose=0)
-
         ''' append to Gui prediction plots buffers'''
         channelToDisplay = 0
         self.predictionTables.pushNewRealData(a[:, :, channelToDisplay].flatten())
