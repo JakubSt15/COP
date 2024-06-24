@@ -23,54 +23,18 @@ class DataRefiner:
             fig, axs = plt.subplots(7, 1, figsize=(10, 18))
 
         array_2d = self.__remove_outliers_and_fill(array_2d)
-        print("after remove ouliers: ", array_2d.shape)
-
-        if visualize:
-            axs[0].plot(array_2d[:, 0])
-            axs[0].set_title('After Outlier Removal')
 
         array_2d = self.__butter_filter(array_2d)
-        print("after butter filter: ", array_2d.shape)
-
-        if visualize:
-            axs[1].plot(array_2d[:, 0])
-            axs[1].set_title('After Butterworth Filter')
 
         array_2d = self.power(array_2d)
-        print("after power: ", array_2d.shape)
-
-        if visualize:
-            axs[2].plot(array_2d[:, 0])
-            axs[2].set_title('Power')
 
         array_2d = self.__moving_average(array_2d, 1500)
-        print("after moving avg: ", array_2d.shape)
-        if visualize:
-            axs[3].plot(array_2d[:, 0])
-            axs[3].set_title('Moving Average')
 
         array_2d = self.__decimation(array_2d, 128)
-        print("after decimation: ", array_2d.shape)
-
-        if visualize:
-            axs[4].plot(array_2d[:, 0])
-            axs[4].set_title('After Decimation')
 
         array_2d = self.quantize_power(array_2d.T, 1000)
-        print("after quantization: ", array_2d.shape)
-        if visualize:
-            axs[5].plot(array_2d[:, 0])
-            axs[5].set_title('Quantize Power')
 
         array_2d = self.__transformation(array_2d.T)
-        print("after transformation: ", array_2d.shape)
-
-        if visualize:
-            axs[6].plot(array_2d[0, :])
-            axs[6].set_title('MinMax Scaling')
-            plt.tight_layout()
-            plt.show()
-
         return array_2d
 
     def power(self, attack):

@@ -1,18 +1,17 @@
-from prepare_data import prepare_dataset_attack_model, prepare_datasets_channel_attacks
+from Model.prepare_data import prepare_dataset_attack_model, prepare_datasets_channel_attacks
 import torch
 from torch import nn
 from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-
+from CommonTools.CommonTools import show_popup, QMessageBox
 class AttackModel(nn.Module):
     def __init__(self):
         super(AttackModel, self).__init__()
         self.model = nn.Sequential( 
             nn.Linear(19, 1),
             nn.BatchNorm1d(1),
-            nn.Dropout(0.02),
+            nn.Dropout(0.01),
             nn.Sigmoid()
         )
 
@@ -20,7 +19,7 @@ class AttackModel(nn.Module):
         return self.model(x)
 
 class AttackTrainer:
-    def __init__(self, data, epochs=300, learning_rate=0.01, dropout=0.18, test_size=0.2, model_save_path='./model_pytorch/attack_model_pyTorch.pth'):
+    def __init__(self, data, epochs=10000, learning_rate=0.01, dropout=0.18, test_size=0.2, model_save_path='./model_pytorch/attack_model_pyTorch.pth'):
         self.data = data
         self.epochs = epochs
         self.learning_rate = learning_rate
@@ -35,11 +34,7 @@ class AttackTrainer:
 
     def fit_attack(self, validation_split=0.2, plot_loss=False):
         # Splitting data into train and validation sets
-        
-        attributes, labels = prepare_dataset_attack_model(self.data, shuffle=False, plot_verbose=False)
-
-        pd.DataFrame(attributes).to_csv('ATRYBUTY.csv', index=False, header=False)
-        
+        attributes, labels = prepare_dataset_attack_model(self.data, shuffle=True, plot_verbose=False)
         split_index = int(len(attributes) * (1 - validation_split))
         train_attributes, val_attributes = attributes[:split_index], attributes[split_index:]
         train_labels, val_labels = labels[:split_index], labels[split_index:]
@@ -52,8 +47,7 @@ class AttackTrainer:
         model = AttackModel()
         loss_fn = nn.BCEWithLogitsLoss()
         # optimizer = torch.optim.SGD(params=model.parameters(), lr=self.learning_rate)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-2)
-        
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=1e-2)
         trainingEpoch_loss, validationEpoch_loss = [], []
 
         for epoch in range(self.epochs):
@@ -71,11 +65,8 @@ class AttackTrainer:
             val_loss = loss_fn(val_logits, val_labels)
             validationEpoch_loss.append(val_loss.detach().numpy())
             
-            if epoch % 100 == 0:
-                print(f"Epoch: {epoch} | Train Loss: {train_loss:.5f} | Validation Loss: {val_loss:.5f}")
 
         torch.save(model.state_dict(), self.model_save_path)
-        print(f"Model saved to {self.model_save_path}")
 
         if plot_loss: 
             plt.plot(trainingEpoch_loss, label='train_loss')
@@ -132,7 +123,6 @@ class MultiChannelAttackTrainer:
         val_attributes = torch.tensor(val_attributes, dtype=torch.float32)
         val_labels = torch.tensor(val_labels, dtype=torch.float32)
 
-        print(f"LENGTHS: {len(val_attributes)}, {len(val_labels)}")
         model = MultiChannelAttackModel()
         loss_fn = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.SGD(params=model.parameters(), lr=self.learning_rate)
@@ -154,12 +144,9 @@ class MultiChannelAttackTrainer:
             val_loss = loss_fn(val_logits, val_labels)
             validationEpoch_loss.append(val_loss.detach().numpy())
             
-            if epoch % 100 == 0:
-                print(f"Epoch: {epoch} | Train Loss: {train_loss:.5f} | Validation Loss: {val_loss:.5f}")
 
         torch.save(model.state_dict(), self.model_save_path)
-        print(f"Model saved to {self.model_save_path}")
-
+        show_popup("Model saved", f"Model saved to {self.model_save_path}", QMessageBox.Information)
         if plot_loss: 
             plt.plot(trainingEpoch_loss, label='train_loss')
             plt.plot(validationEpoch_loss, label='val_loss')
